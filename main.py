@@ -5,15 +5,28 @@ and set Shots / Qubits / Debias under Run settings.
 """
 import math
 
-from qrand import QuantumRandom, EntropyExhausted, stats
+from qrand import EntropyExhausted, QuantumRandom, stats
 
 try:
-    backend  # pre-created by Qollab from the Select QPU dialog
+    backend  # noqa: B018 - raises NameError unless Qollab pre-created it (Select QPU dialog)
     RUNNING_LOCALLY = False
 except NameError:  # running locally: fall back to Qiskit's simulator
     from qiskit.providers.basic_provider import BasicSimulator
     backend = BasicSimulator()
     RUNNING_LOCALLY = True
+
+
+HEALTH_TESTS = [
+    ("monobit_p", "frequency"),
+    ("block_frequency_p", "block frequency"),
+    ("runs_p", "runs"),
+    ("longest_run_p", "longest run of 1s"),
+    ("serial_p", "serial (3-bit)"),
+]
+
+
+def pass_fail(p):
+    return "n/a" if math.isnan(p) else f"{p:.3f} {'pass' if p >= 0.01 else 'FAIL'}"
 
 
 def bar(p, width=30):
@@ -38,11 +51,14 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
     for q, p in enumerate(rep["per_qubit_p1"]):
         print(f"q{q}: {bar(p)} {p:.3f}")
     raw, deb = rep["raw"], rep["debiased"]
-    print(f"\nraw      : {raw['bits']:>6} bits, ones={raw['ones_fraction']:.4f}, "
-          f"monobit p={raw['monobit_p']:.3f}, runs p={raw['runs_p']:.3f}")
-    print(f"{debias:<9}: {deb['bits']:>6} bits, ones={deb['ones_fraction']:.4f}, "
-          f"monobit p={deb['monobit_p']:.3f}, runs p={deb['runs_p']:.3f}")
-    print("(p >= 0.01 passes. Noise models can tilt raw bits toward 1; debiasing evens them out.)\n")
+    print(f"\n{'health test':<20}{'raw':>14}{debias:>14}")
+    print(f"{'bits':<20}{raw['bits']:>14}{deb['bits']:>14}")
+    print(f"{'share of 1s':<20}{raw['ones_fraction']:>14.4f}{deb['ones_fraction']:>14.4f}")
+    for key, label in HEALTH_TESTS:
+        print(f"{label:<20}{pass_fail(raw[key]):>14}{pass_fail(deb[key]):>14}")
+    print("(NIST SP 800-22 style p-values: p >= 0.01 passes. With 10 checks, a single FAIL turns "
+          "up by chance in about 1 run in 10. Noise models can tilt raw bits toward 1; "
+          "debiasing evens them out.)\n")
 
     print("=== 4. Random walk: each bit is a step, 1 = up, 0 = down ===")
     raw_bits, deb_bits = qr.raw_bits, qr.pool_bits()
@@ -79,6 +95,15 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
     print(f"entropy left in pool: {qr.bits_remaining} bits")
     for w in rep["warnings"]:
         print("WARNING:", w)
+
+    raw_walk_end, deb_walk_end = walks["raw"][-1], walks[debias][-1]
+    min_p = {name: min(r[key] for key, _ in HEALTH_TESTS if not math.isnan(r[key]))
+             for name, r in (("raw", raw), ("debiased", deb))}
+    print("\nResult line (copy into docs/DEVICE_RESULTS.md to compare devices):")
+    print(f"| {rep['backend']} | {'hardware' if rep['hardware'] else 'simulator'} | {qubits} | "
+          f"{shots} | {debias} | {max(rep['per_qubit_p1'], key=lambda p: abs(p - 0.5)):.3f} | "
+          f"{raw['ones_fraction']:.4f} | {deb['ones_fraction']:.4f} | {raw_walk_end:+d} | "
+          f"{deb_walk_end:+d} | {min_p['raw']:.3f} | {min_p['debiased']:.3f} |")
 
     if rep["hardware"]:
         print("\nNote: these bits come from measuring real qubits, so they are physically "

@@ -1,6 +1,8 @@
 import random
+
 import pytest
-from qrand import QuantumRandom, EntropyExhausted, is_hardware, stats
+
+from qrand import EntropyExhausted, QuantumRandom, is_hardware, stats
 
 
 class FakeResult:
@@ -33,7 +35,7 @@ def test_default_backend_bits_and_numbers():
     qr = QuantumRandom(shots=256, n_qubits=8, debias="none")
     s = qr.bitstring(40)
     assert len(s) == 40 and set(s) <= {"0", "1"}
-    assert set(qr.randint(1, 6) for _ in range(150)) == {1, 2, 3, 4, 5, 6}
+    assert {qr.randint(1, 6) for _ in range(150)} == {1, 2, 3, 4, 5, 6}
     assert 0 <= qr.random() < 1
 
 
@@ -114,3 +116,33 @@ def test_is_hardware():
     assert not is_hardware(IonQSimulatorBackend())
     assert not is_hardware(BasicSimulator())
     assert not QuantumRandom(shots=64).report()["hardware"]
+
+
+def test_nist_worked_examples():
+    # Examples from NIST SP 800-22 rev 1a, sections 2.1, 2.2, 2.3 and 2.4
+    assert round(stats.monobit_p("1011010101"), 6) == 0.527089
+    assert round(stats.block_frequency_p("0110011010", block=3), 6) == 0.801252
+    assert round(stats.runs_p("1001101011"), 6) == 0.147232
+    e128 = ("11001100000101010110110001001100111000000000001001001101010100010001001111010110"
+            "100000001101011111001100111001101101100010110010")
+    assert round(stats.longest_run_p(e128), 6) == 0.180609
+
+
+def test_igamc_closed_forms():
+    import math
+    for x in (0.1, 1.0, 5.0, 30.0):
+        assert math.isclose(stats.igamc(1, x), math.exp(-x), rel_tol=1e-12)
+        assert math.isclose(stats.igamc(0.5, x), math.erfc(math.sqrt(x)), rel_tol=1e-12)
+
+
+def test_serial_and_longest_run_catch_patterns():
+    rng = random.Random(7)
+    fair = "".join(rng.choice("01") for _ in range(4096))
+    assert min(stats.serial_p(fair)) > 0.01
+    assert stats.longest_run_p(fair) > 0.01
+    pattern = "0011" * 1024  # balanced, so monobit passes, but far from random
+    assert stats.monobit_p(pattern) == 1.0
+    assert min(stats.serial_p(pattern)) < 0.01
+    assert stats.longest_run_p(pattern) < 0.01
+    with pytest.raises(ValueError):
+        stats.serial_p("01" * 10)

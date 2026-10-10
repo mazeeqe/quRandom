@@ -132,14 +132,23 @@ Each of `raw` and `debiased` contains:
 | `bits` | number of bits tested | – |
 | `ones_fraction` | share of 1s | 0.5 |
 | `monobit_p` | frequency test p-value | `>= 0.01` passes |
+| `block_frequency_p` | block frequency test: is the share of 1s about ½ inside every 32-bit block? | `>= 0.01` passes |
 | `runs_p` | runs test p-value (are flips between 0 and 1 as frequent as chance predicts?) | `>= 0.01` passes |
+| `longest_run_p` | longest run of 1s per block, compared with chance (needs 128+ bits, else `nan`) | `>= 0.01` passes |
+| `serial_p` | serial test: are all overlapping 3-bit patterns equally common? (lower of its two p-values) | `>= 0.01` passes |
 | `nibble_entropy` | Shannon entropy of 4-bit blocks | 4.0 |
 
 `report()` needs at least 100 bits in both the raw and the debiased pool, so use a job of at
 least 512 raw bits with `von_neumann` (for example 8 qubits × 64 shots).
 
 The same tests are available on their own in `qrand.stats`:
-`ones_fraction`, `monobit_p`, `runs_p`, `nibble_entropy`, `per_qubit_p1` and `health_report`.
+`ones_fraction`, `monobit_p`, `block_frequency_p(bits, block=32)`, `runs_p`, `longest_run_p`,
+`serial_p(bits, m=3)` (returns both p-values), `nibble_entropy`, `per_qubit_p1`, `health_report`
+and `igamc` (the incomplete gamma function the tests use).
+
+The five p-value tests follow NIST SP 800-22 and reproduce the worked examples in that document
+(checked in `tests/test_qrand.py`). With 10 checks per run (5 tests × raw and debiased), a single
+fail at the 0.01 level turns up by chance in about 1 run in 10, even for perfect bits.
 
 `qrand.stats` also has the helpers behind the demo charts:
 

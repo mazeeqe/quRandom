@@ -8,7 +8,8 @@ job per run.
 from __future__ import annotations
 
 import random
-from typing import List, Optional, Sequence, TypeVar
+from collections.abc import Sequence
+from typing import TypeVar
 
 from qiskit import QuantumCircuit
 
@@ -53,10 +54,10 @@ class QuantumRandom:
             backend = BasicSimulator()
         self.backend, self.n_qubits, self.shots = backend, n_qubits, shots
         self.debias, self.auto_refill = debias, auto_refill
-        self.warnings: List[str] = []
+        self.warnings: list[str] = []
         self.circuit = self._build_circuit(n_qubits)
         self._pool, self._pos = "", 0
-        self.raw_shots: List[str] = []
+        self.raw_shots: list[str] = []
         self.raw_bits = ""
         self.refill()
 
@@ -75,7 +76,7 @@ class QuantumRandom:
         result = job.result()
         try:
             shots = list(result.get_memory())
-        except Exception:
+        except Exception:  # noqa: BLE001 - providers raise different errors when memory is off
             shots = None
         if not shots:  # backend gave only counts: order of shots is lost
             counts = result.get_counts()
@@ -91,7 +92,7 @@ class QuantumRandom:
         self.raw_bits = "".join(shots)
         self._pool, self._pos = self._extract(shots), 0
 
-    def _extract(self, shots: List[str]) -> str:
+    def _extract(self, shots: list[str]) -> str:
         if self.debias == "none":
             return "".join(shots)
         if self.debias == "xor":

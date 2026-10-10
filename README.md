@@ -7,7 +7,8 @@ circuit job fills an *entropy pool*, and numbers are carved out of it. qrand mea
 bias (noisy hardware often reads `1` a little more than `0`) and can remove it with `xor` or
 `von_neumann` debiasing.
 
-See [docs/USAGE.md](docs/USAGE.md) for the full API: ranges, bit costs and how many numbers a
+New here? Start with the tutorial notebook,
+[notebooks/qrand_tutorial.ipynb](notebooks/qrand_tutorial.ipynb). See [docs/USAGE.md](docs/USAGE.md) for the full API: ranges, bit costs and how many numbers a
 job gives you. [docs/PROJECT_PAGE.md](docs/PROJECT_PAGE.md) has the project write-up, and
 [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) has the demo video plan.
 
@@ -35,7 +36,8 @@ One run sends a single circuit job and prints six sections:
 
 1. **The circuit:** a Hadamard gate on every qubit, then a measurement.
 2. **Bitstring → number:** 16 measured bits turned into an integer.
-3. **Is each qubit a fair coin?** P(1) per qubit and health tests, raw vs debiased.
+3. **Is each qubit a fair coin?** P(1) per qubit and a table of five NIST SP 800-22 health tests
+   (frequency, block frequency, runs, longest run, serial), raw vs debiased.
 4. **Random walk:** every bit is a step, `1` up and `0` down. A fair walk of `n` steps ends
    within `±2√n` about 95% of the time; a bias toward `1` makes it drift out of that range. The
    demo compares the raw walk with the debiased one.
@@ -53,6 +55,9 @@ unbiased simulator both walks stay inside the band.*
 
 The walk and dice comparison only read the bits the job already produced; they don't use up the
 pool or send extra jobs.
+
+The run ends with a **result line**. Collect lines from different backends in
+[docs/DEVICE_RESULTS.md](docs/DEVICE_RESULTS.md) to compare how fair each device's qubits are.
 
 ### Run settings
 
@@ -127,8 +132,8 @@ qrand/       library: generator (entropy pool, debiasing) and stats (health test
              random walk, dice, chi-square)
 main.py      Qollab demo: console sections and chart
 tests/       pytest tests
-docs/        usage guide, project page, demo script, example chart
-notebooks/   experiments
+docs/        usage guide, project page, demo script, device results, example chart
+notebooks/   tutorial notebook (qrand_tutorial.ipynb)
 ```
 
 ## Team

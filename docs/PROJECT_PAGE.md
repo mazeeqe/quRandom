@@ -16,7 +16,8 @@ bits "1001011011100011"  ->  int(bits, 2)  ->  38627
 - `bitstring(n)`, `getrandbits(k)`: raw quantum bits and integers
 - `randint(a, b)`: unbiased integers, using rejection sampling (no modulo bias)
 - `random()`, `choice()`, `shuffle()`: floats, picks and shuffles
-- `report()`: per-qubit bias and NIST-style health tests (monobit, runs, entropy)
+- `report()`: per-qubit bias and five NIST SP 800-22 health tests (frequency, block frequency,
+  runs, longest run of 1s, serial), checked against NIST's own worked examples
 - `stats.random_walk()`, `stats.dice_from_bits()`, `stats.chi2_uniform_p()`: the tools
   behind the demo charts
 
@@ -73,17 +74,22 @@ or **Qubits**.
 4. Read the console:
    1. the circuit
    2. a measured bitstring converted to a number
-   3. P(1) for each qubit and the health tests, raw vs debiased
+   3. P(1) for each qubit and a pass/fail table of the five health tests,
+      raw vs debiased
    4. the random walk: where the raw and debiased walks end, and whether that
       is inside the range of fair walks
    5. dice from raw vs debiased bits, with the chi-square fairness test
    6. using the numbers: dice rolls, a float and a shuffle
+   7. a result line you can collect across backends to compare devices
 5. Look at the chart: per-qubit bias, dice raw vs debiased, and the two random
    walks inside the band where fair walks stay.
 
 Tip: try an IonQ noise-model simulator to see real noise. More **Shots** make
 a bias easier to see in the walk. The walk and the dice comparison only read
 the job's bits, so it is still a single job.
+
+New to the library? The tutorial notebook walks through it step by step:
+[notebooks/qrand_tutorial.ipynb](https://github.com/mazeeqe/quRandom/blob/main/notebooks/qrand_tutorial.ipynb)
 
 Use it in your own code:
 

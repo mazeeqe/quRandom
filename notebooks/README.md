@@ -1,1 +1,1 @@
-Put Jupyter notebooks for experiments and demos here.
+Tutorial notebook: [qrand_tutorial.ipynb](qrand_tutorial.ipynb) walks through the library step by step (circuit, numbers, health tests, random walk, debiasing, hardware). Add your own experiments here.
