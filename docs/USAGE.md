@@ -190,6 +190,7 @@ within the backend's limit, e.g. 24 on Qollab's built-in simulator). The result 
 | `correlations` | `{(a, b): E}` for the four setting pairs, `E = P(same) − P(different)` |
 | `shots_per_setting` | shots that landed on each setting pair (about `shots / 4` each) |
 | `quantum_prediction`, `classical_limit` | 2.828 and 2 |
+| `certified` | Bell-certified randomness, see below |
 
 The settings are picked per shot by two qubits in superposition, so every setting pair gets
 about a quarter of the shots. With 512 shots the standard error of `S` is about 0.12. The test
@@ -198,6 +199,24 @@ only needs counts, so it also works on simulators that return counts without per
 The `qrand.bell` module has the pieces: `add_chsh(circuit, qubits, clbits)` appends the test to
 any circuit, `chsh_from_shots(shots)` computes the result from 4-character shot strings, and
 `expected_correlation(a, b)` gives the quantum prediction for each setting pair.
+
+### Certified randomness: `report()["bell"]["certified"]`
+
+A Bell score S above 2 puts a floor under the min-entropy of Alice's result in each round, for any
+quantum devices: `1 − log2(1 + √(2 − S²/4))` bits (Pironio et al., *Nature* 464, 1021 (2010),
+eq. 6). It is 0 at S = 2 and 1 at S = 2.83.
+
+| Key | Meaning |
+| --- | --- |
+| `per_round` | guaranteed bits per round at the measured S |
+| `per_round_safe` | the same at `s_safe`, which is S minus `sigmas` (3) standard errors |
+| `certified_bits` | `rounds × per_round_safe` |
+| `rounds` | Bell rounds (= shots) |
+| `setting_bits_spent` | 2 per round: the setting coins used up, so there is no expansion |
+
+`qrand.certify.min_entropy_bound(S)` gives the bound for any S. The guarantee assumes the two sides
+of the test cannot communicate, which one chip or a simulator can't ensure: treat it as a lesson
+in how certification works, not as a certificate.
 
 ## Un-flip test
 
@@ -221,6 +240,7 @@ rep["summary"]
 # {'fair_qubits': True,                 every qubit within 3 standard errors of 0.5
 #  'health_tests_passed': {'raw': 6, 'debiased': 6},   five NIST tests + pattern check
 #  'bell_quantum': True,                Bell S above 2
+#  'certified_bits_per_round': 0.24,    Bell-certified bits per round (S - 3 sigma)
 #  'unflip_interference': True,         un-flip P(0) clearly above 0.5
 #  'all_passed': True}           all of the above, allowing one chance test failure
 ```

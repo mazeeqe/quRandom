@@ -8,6 +8,7 @@ import textwrap
 
 from qrand import EntropyExhausted, QuantumRandom, is_hardware, stats
 from qrand import bell as bell_module
+from qrand import certify as certify_module
 
 try:
     backend  # noqa: B018 - raises NameError unless Qollab pre-created it (Select QPU dialog)
@@ -69,6 +70,36 @@ def unpredictability(r):
 
 def format_s(chsh):
     return "-" if not chsh or math.isnan(chsh["S"]) else f"{chsh['S']:.2f} ± {chsh['sigma']:.2f}"
+
+
+def format_certified(chsh):
+    if not chsh or math.isnan(chsh["S"]):
+        return "-"
+    return f"{chsh['certified']['per_round_safe']:.3f}"
+
+
+def explain_certified(chsh):
+    """Step 4, part two: how many random bits the Bell score guarantees."""
+    cert = chsh["certified"]
+    print("\n  How much randomness does S guarantee?")
+    say("A Bell score above 2 does more than show the pair is quantum: it puts a floor under "
+        "how unpredictable the results are, whatever is inside the machine. The higher S, "
+        "the higher the floor (Pironio et al., Nature 2010):")
+    print()
+    print("    S = 2.00  ->  0 guaranteed random bits per round  (could be faked)")
+    print("    S = 2.83  ->  1 guaranteed random bit per round   (perfectly unpredictable)")
+    print(f"    this run, playing safe with S - {cert['sigmas']:.0f}x its uncertainty "
+          f"= {cert['s_safe']:.2f}:")
+    print(f"              ->  {cert['per_round_safe']:.2f} guaranteed random bit per round, "
+          f"{cert['certified_bits']:.0f} bits over {cert['rounds']} rounds\n")
+    if cert["per_round_safe"] > 0:
+        verdict("This is the idea behind certified randomness, the kind banks and lotteries "
+                "want: you trust the physics, not the manufacturer.")
+    else:
+        verdict("S is too close to 2 to guarantee anything after the safety margin. More "
+                "Shots narrow the uncertainty.")
+    say("Each round spends 2 random setting coins to certify at most 1 bit, so this demo "
+        "does not create extra randomness; real protocols run the test only now and then.")
 
 
 def bar(p, width=30):
@@ -304,8 +335,12 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
             if chsh["S"] > chsh["quantum_prediction"]:
                 say("(S a bit above 2.83 is just luck in the sampling: the true value can't "
                     "exceed 2.83. More Shots narrow the ±.)")
-        say("(This is a demonstration, not a certificate: a rigorous Bell test also needs the "
-            "two qubits far apart, which one chip or a simulator can't provide.)")
+            explain_certified(chsh)
+        say("(This is a demonstration, not a certificate: the guarantee holds only if the two "
+            "qubits cannot talk to each other, which needs them far apart. A simulator reaches "
+            "S = 2.83 precisely because one program computes both qubits together, and one "
+            "chip can't rule that out either. That is the loophole real certified-randomness "
+            "experiments close.)")
 
     # ---------------------------------------------------------------- summary
     heading("SUMMARY")
@@ -328,6 +363,10 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
         print(f"  {'✔' if quantum else '!'} Bell test: S = {chsh['S']:.2f}, "
               + ("above the classical limit of 2: quantum" if quantum
                  else "not above the classical limit of 2 this time"))
+        cert = chsh["certified"]
+        if cert["per_round_safe"] > 0:
+            print(f"  ✔ Bell floor: >= {cert['per_round_safe']:.2f} random bit per round, "
+                  f"{cert['certified_bits']:.0f} bits (a lesson, not a certificate)")
     if checks_skipped:
         print("  - Bell and un-flip checks skipped on hardware (turn on Hardware checks)")
     if rep["hardware"]:
@@ -371,6 +410,13 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
         print(f"  S = {chsh['S']:.3f} ± {chsh['sigma']:.3f}  "
               f"({chsh['sigmas_above_classical']:+.1f} sigma relative to 2; Tsirelson bound "
               f"{chsh['quantum_prediction']:.3f})")
+        cert = chsh["certified"]
+        print("  Certified min-entropy (Pironio et al. 2010, eq. 6): "
+              "H_min(A|X) >= 1 - log2(1 + sqrt(2 - S^2/4))")
+        print(f"    at S = {chsh['S']:.3f}: {cert['per_round']:.3f} bit/round;  at S - "
+              f"{cert['sigmas']:.0f} sigma = {cert['s_safe']:.3f}: {cert['per_round_safe']:.3f} "
+              f"bit/round x {cert['rounds']} rounds = {cert['certified_bits']:.0f} bits "
+              f"(spent {cert['setting_bits_spent']} setting bits: no expansion)")
     if unflipped:
         print()
         say(f"Un-flip test (H, barrier, H, measure): P(0) = {unflipped['p0']:.4f} "
@@ -388,7 +434,8 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
           f"{raw['ones_fraction']:.4f} | {deb['ones_fraction']:.4f} | {raw_walk_end:+d} | "
           f"{deb_walk_end:+d} | {min_p['raw']:.3f} | {min_p['debiased']:.3f} | "
           f"{raw['min_entropy']:.3f} | {deb['min_entropy']:.3f} | "
-          f"{format_s(chsh)} | {'-' if not unflipped else format(unflipped['p0'], '.3f')} |")
+          f"{format_s(chsh)} | {format_certified(chsh)} | "
+          f"{'-' if not unflipped else format(unflipped['p0'], '.3f')} |")
     if plot:
         charts = ["the coins, the dice and the random walk", "what the bits look like and the checks"]
         charts += ["the Bell test"] if chsh else []
@@ -492,7 +539,7 @@ def plot_randomness_report(plt, raw_bits, deb_bits, raw, deb, cleaned, raw_c, de
 
 def plot_bell(plt, chsh):
     """Third chart: the four correlations and S against the classical limit."""
-    fig, ax = plt.subplots(1, 2, figsize=(10, 3.8))
+    fig, ax = plt.subplots(1, 3, figsize=(14, 3.8))
     keys = list(chsh["correlations"])
     labels = [f"A{a} B{b}" for a, b in keys]
     ax[0].bar(range(4), [chsh["correlations"][k] for k in keys], color="#5b6cff",
@@ -517,6 +564,21 @@ def plot_bell(plt, chsh):
     ax[1].set(title=f"Bell test score S = {s_value:.2f} ± {sigma:.2f}\nabove 2 = quantum", xlim=(min(0, s_value - 0.5), 3.2),
               ylim=(-0.5, 1.1), yticks=[])
     ax[1].legend(fontsize=7, loc="upper left", ncol=2)
+
+    cert = chsh["certified"]
+    grid = [2 + i * (chsh["quantum_prediction"] - 2) / 200 for i in range(201)]
+    ax[2].plot(grid, [certify_module.min_entropy_bound(x) for x in grid], color="k", lw=1.5,
+               label="guaranteed by quantum physics")
+    ax[2].axvline(chsh["classical_limit"], color="red", ls="--", lw=1)
+    for x, y, style, label in ((s_value, cert["per_round"], "o", "measured S"),
+                               (cert["s_safe"], cert["per_round_safe"], "s",
+                                f"S - {cert['sigmas']:.0f}σ (safe)")):
+        if not math.isnan(x):
+            ax[2].plot(min(max(x, 2), chsh["quantum_prediction"]), y, style, color="#5b6cff",
+                       ms=8, label=label)
+    ax[2].set(title="Certified randomness: guaranteed\nrandom bits per round from S",
+              xlabel="Bell score S", ylabel="bits per round", xlim=(1.95, 2.9), ylim=(0, 1.05))
+    ax[2].legend(fontsize=7, loc="upper left")
     fig.tight_layout()
     plt.show()
 

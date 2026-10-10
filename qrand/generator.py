@@ -13,7 +13,7 @@ from typing import TypeVar
 
 from qiskit import QuantumCircuit
 
-from . import bell, stats
+from . import bell, certify, stats
 
 T = TypeVar("T")
 DEBIAS_MODES = ("none", "xor", "von_neumann")
@@ -118,7 +118,8 @@ class QuantumRandom:
         if self.bell_test:
             k = bell.BELL_QUBITS
             self.bell_shots = [s[:k] for s in shots]
-            self.bell_result = bell.chsh_from_shots(self.bell_shots)
+            chsh = bell.chsh_from_shots(self.bell_shots)
+            self.bell_result = {**chsh, "certified": certify.certify(chsh)}
             shots = [s[k:] for s in shots]
         self.raw_shots = shots
         self.raw_bits = "".join(shots)
@@ -238,6 +239,7 @@ def check_hardware(backend=None, n_qubits: int = 8, shots: int = 512,
         "fair_qubits": all(abs(p - 0.5) <= lean_limit for p in rep["per_qubit_p1"]),
         "health_tests_passed": {name: _tests_passed(rep[name]) for name in ("raw", "debiased")},
         "bell_quantum": rep["bell"]["S"] > bell.CLASSICAL_LIMIT,   # False if S is nan
+        "certified_bits_per_round": rep["bell"]["certified"]["per_round_safe"],
         "unflip_interference":
             (unflip["zeros"] - unflip["shots"] / 2) / (unflip["shots"] / 4) ** 0.5 > 3,
     }

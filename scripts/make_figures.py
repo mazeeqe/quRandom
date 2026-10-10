@@ -35,7 +35,7 @@ ORANGE, BLUE, INK, PAPER = "#ff7a59", "#5b6cff", "#1d2333", "#f6f7fb"
 def demo_charts(backend, names):
     """Run main.py's demo on `backend` and save its charts under `names` (None = skip)."""
     namespace = {"__name__": "__main__", "backend": backend}
-    exec((ROOT / "main.py").read_text(), namespace)  # noqa: S102 - runs our own main.py like Qollab does
+    exec((ROOT / "main.py").read_text(encoding="utf-8"), namespace)  # noqa: S102 - runs our own main.py like Qollab does
     queue = list(names)
 
     def save():

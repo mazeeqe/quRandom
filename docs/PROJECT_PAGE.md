@@ -1,7 +1,41 @@
 **quRandom** turns measured qubits into random numbers, checks how fair the quantum coins really
-are, removes bias, and shows two of the hardest quantum ideas happening live: **superposition**,
-by un-flipping a quantum coin, and **entanglement**, with a Bell test. All of
-it runs in **one circuit and one job**, so it works within IonQ's one-job-per-run limit on Qollab.
+are, removes bias, and shows three of the hardest quantum ideas happening live: **superposition**,
+by un-flipping a quantum coin, **entanglement**, with a Bell test, and **certified randomness**:
+how many random bits a Bell score *guarantees*, whatever is inside the machine. All of it runs in
+**one circuit and one job**, so it works within IonQ's one-job-per-run limit on Qollab.
+
+**Theme: Quantum Unlocked.** We pick a hard, timely topic, certified randomness, and teach it by
+letting you run it.
+
+## Why it matters
+
+Random numbers sit under encryption keys, simulations, lotteries and fair draws. Today you have to
+trust whoever built the generator. A Bell test changes that: if the results break the classical
+limit, physics itself puts a floor under how unpredictable they are. In March 2025, JPMorganChase,
+Quantinuum and US national labs published the first certified randomness made on a quantum
+computer (*Nature*, 2025), using a different protocol. quRandom takes the original idea behind
+certified randomness, Bell-certified randomness (Pironio et al., *Nature* 2010), and makes it
+something anyone can run in one free job: watch a Bell score turn into guaranteed bits, and watch
+noise shrink the guarantee.
+
+It is also a practical **health check** for anyone who uses quantum randomness:
+`check_hardware(backend)` tests a device's qubits for bias, patterns, superposition and
+entanglement in a single job, and every run prints a result line so devices can be compared side
+by side.
+
+Who it is for:
+
+- **Teachers and students:** one run shows superposition, entanglement and certified randomness
+  with plain-language console output, and the tutorial notebook walks through each step.
+- **Qollab users picking a backend:** run the same check on each simulator or device and compare
+  how fair its qubits are before using it as a source of randomness.
+
+### How is this different from a basic quantum random number generator?
+
+The textbook version stops at "Hadamard, measure, read the bits". quRandom keeps going: it
+**tests** its own bits (per-qubit bias, five NIST tests, min-entropy, correlations, a random walk),
+**cleans** them when a device leans, and **checks where they come from** with an un-flip test and a
+Bell test, turning the Bell score into a bound on guaranteed randomness.
 
 ![How quRandom works: one circuit, one job, check and debias, numbers, plus a Bell test](https://raw.githubusercontent.com/mazeeqe/quRandom/main/docs/images/how_it_works.png)
 
@@ -106,8 +140,36 @@ Any classical source gives `S ≤ 2`. Quantum mechanics predicts `2√2 ≈ 2.83
 ![Bell test: correlation per setting pair against the quantum prediction, and S against the classical limit](https://raw.githubusercontent.com/mazeeqe/quRandom/main/docs/images/bell_test.png)
 
 *A 512-shot run on the built-in simulator: S is many standard errors above the classical limit
-of 2. This is a demonstration, not a certificate of randomness: a rigorous Bell test also needs
-the two sides far apart, which one chip or a simulator can't provide.*
+of 2. The right panel turns S into guaranteed random bits (next section).*
+
+## From a Bell score to guaranteed random bits
+
+Breaking the classical limit does more than show the pair is quantum. Pironio et al. (*Nature*
+464, 1021, 2010) proved that for **any** quantum devices reaching a score S, each of Alice's
+results has at least this much min-entropy (unpredictability):
+
+$$H_{\min}(A|X) \ge 1 - \log_2\left(1 + \sqrt{2 - S^2/4}\right)$$
+
+| Bell score S | guaranteed random bits per round |
+| --- | --- |
+| 2.00 (classical limit) | 0: a classical program could have written the results in advance |
+| 2.50 | 0.27 |
+| 2.83 (quantum maximum) | 1: perfectly unpredictable |
+
+quRandom computes this for every Bell run. To avoid overstating a lucky sample, it uses S minus 3
+standard errors. The console shows the guarantee per round and in total; the right panel of the
+Bell chart shows where the run sits on the curve. `report()["bell"]["certified"]` has the numbers.
+
+Three honest limits, all printed by the demo:
+
+- **The loophole is the lesson.** The guarantee holds only if the two qubits cannot talk to each
+  other. A simulator reaches S = 2.83 precisely *because* one program computes both qubits
+  together, and one chip can't rule that out either. Real experiments separate the two sides,
+  which is what turns this demonstration into a certificate.
+- **No expansion.** Each round spends 2 random setting coins to certify at most 1 bit. Real
+  protocols run the test only now and then, so they get out more randomness than they put in.
+- **Asymptotic bound.** The formula is for many rounds; the 3-standard-error margin stands in for
+  the paper's finite-statistics correction.
 
 ## How to run
 
@@ -157,14 +219,20 @@ hackathon.
 - IonQ's ideal simulator returns counts only, not the order of the shots. quRandom then restores
   a random order with the OS random generator and prints a warning. The noise-model simulators
   return per-shot results.
+- The Bell-certified bits are a lesson in how certification works, not a certificate: one chip or
+  a simulator can't separate the two sides of the test.
+- `xor` debiasing assumes neighbouring qubits are independent. Noise that is correlated between
+  qubits (crosstalk) would make it less effective; `von_neumann` compares shots of the same qubit
+  instead.
 - Not for cryptographic use.
 
 ## Built during the hackathon
 
-Everything here (library, bias analysis, debiasing, health tests, Bell test, un-flip test, demo,
-docs and pictures) was built during the Qollab Hackathon window (Oct 9–11, 2026). No pre-existing project
+Everything here (library, bias analysis, debiasing, health tests, Bell test, certified-randomness
+bound, un-flip test, demo, docs and pictures) was built during the Qollab Hackathon window (Oct 9–11, 2026). No pre-existing project
 code was reused. The code was written with the help of AI tools (Claude). It builds on Qiskit;
-the health tests follow NIST SP 800-22 and the min-entropy estimate follows NIST SP 800-90B.
+the health tests follow NIST SP 800-22, the min-entropy estimate follows NIST SP 800-90B, and the
+certified-randomness bound is eq. (6) of Pironio et al., *Nature* 464, 1021 (2010).
 
 Source code, tests and docs: [github.com/mazeeqe/quRandom](https://github.com/mazeeqe/quRandom).
 License: MIT.

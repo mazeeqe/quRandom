@@ -7,7 +7,9 @@
 Every qubit gets a Hadamard gate and is measured, so each one is a 50/50 coin flip. A single
 circuit job fills an *entropy pool*, and numbers are carved out of it. qrand measures each qubit's
 bias (noisy hardware often reads `1` a little more than `0`) and can remove it with `xor` or
-`von_neumann` debiasing.
+`von_neumann` debiasing. A Bell test in the same job shows the bits come from quantum effects, and
+qrand turns its score into **Bell-certified randomness**: how many random bits that score
+guarantees (Pironio et al., *Nature* 2010). Theme: **Quantum Unlocked**.
 
 New here? Start with the tutorial notebook,
 [notebooks/qrand_tutorial.ipynb](notebooks/qrand_tutorial.ipynb). See [docs/USAGE.md](docs/USAGE.md) for the full API: ranges, bit costs and how many numbers a
@@ -108,6 +110,24 @@ sides far apart and other loopholes closed, which a single chip or a simulator c
 *A 512-shot run on Qiskit's built-in simulator: S = 2.84 ± 0.13, about 7 standard errors above
 the classical limit. A value above 2.83 is sampling noise; more shots narrow the error.*
 
+### Certified randomness
+
+For any quantum devices that reach a CHSH score S, each of Alice's results has min-entropy at
+least `1 − log2(1 + √(2 − S²/4))` (Pironio et al., *Nature* 464, 1021 (2010), eq. 6): 0 bits at
+S = 2, 1 bit at S = 2√2. `qrand.certify` computes this from every Bell run, using S minus 3
+standard errors so a lucky sample doesn't overstate it, and the demo shows it in step 4 and in the
+right panel of the Bell chart.
+
+It is a lesson in how certification works, not a certificate: the guarantee assumes the two sides
+can't communicate, and one chip or a simulator (which computes both qubits in one program) can't
+rule that out. Each round also spends 2 setting bits to certify at most 1, so there is no
+randomness expansion.
+
+```python
+qr = QuantumRandom(backend, bell_test=True)
+qr.report()["bell"]["certified"]   # per_round, per_round_safe, certified_bits, ...
+```
+
 ### Run settings
 
 On Qollab, these appear under **Run settings** in the Select QPU dialog. Locally,
@@ -187,8 +207,9 @@ pytest
 ## Project layout
 
 ```
-qrand/       library: generator (entropy pool, debiasing) and stats (health tests,
-             random walk, dice, chi-square)
+qrand/       library: generator (entropy pool, debiasing), stats (health tests,
+             random walk, dice, chi-square), bell (CHSH test) and certify
+             (Bell-certified randomness)
 main.py      Qollab demo: console sections and chart
 tests/       pytest tests
 docs/        usage guide, project page and card, demo script, device results

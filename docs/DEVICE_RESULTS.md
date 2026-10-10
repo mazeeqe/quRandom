@@ -26,9 +26,10 @@ All simulators are free, including the IBM noise models and the IonQ remote simu
 | raw / debiased lowest p | lowest p-value of the five health tests; `>= 0.01` passes |
 | raw / debiased min-entropy | min-entropy per bit; best possible is 0.943 for 4096 raw bits and 0.920 for 2048 `xor` bits |
 | Bell S | Bell test value with its standard error; above 2 is impossible classically, 2.83 is the quantum prediction; noise pulls it down |
+| certified bits/round | random bits per Bell round that S guarantees, using S minus 3 standard errors (Pironio et al. 2010); 0 at S ≤ 2, 1 at S = 2.83 |
 | un-flip P(0) | share of 0s after H, H, measure; 1.0 is perfect interference, 0.5 is a classical coin; noise (decoherence) pulls it down |
 
 ## Results
 
-| backend | type | qubits | shots | debias | worst qubit P(1) | raw share of 1s | debiased share of 1s | raw walk end | debiased walk end | raw lowest p | debiased lowest p | raw min-entropy | debiased min-entropy | Bell S | un-flip P(0) |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| backend | type | qubits | shots | debias | worst qubit P(1) | raw share of 1s | debiased share of 1s | raw walk end | debiased walk end | raw lowest p | debiased lowest p | raw min-entropy | debiased min-entropy | Bell S | certified bits/round | un-flip P(0) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

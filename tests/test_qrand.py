@@ -219,3 +219,41 @@ def test_check_hardware_flags_a_classical_biased_backend():
     from qrand import check_hardware
     s = check_hardware(BiasedBackend(0.6), n_qubits=8, shots=2000)["summary"]
     assert not (s["fair_qubits"] or s["bell_quantum"] or s["unflip_interference"] or s["all_passed"])
+
+
+# ---------------------------------------------------------------- certified randomness
+from qrand import bell, certify
+
+
+def test_certified_bound_endpoints():
+    assert certify.min_entropy_bound(2.0) == 0.0             # classical: nothing certified
+    assert certify.min_entropy_bound(1.5) == 0.0
+    assert certify.min_entropy_bound(float("nan")) == 0.0
+    assert certify.min_entropy_bound(bell.QUANTUM_PREDICTION) == pytest.approx(1.0)
+    assert certify.min_entropy_bound(3.1) == pytest.approx(1.0)   # sampling luck is capped
+
+
+def test_certified_bound_matches_pironio_formula_and_grows_with_s():
+    s = 2.5
+    expected = 1 - math.log2(1 + math.sqrt(2 - s * s / 4))
+    assert certify.min_entropy_bound(s) == pytest.approx(expected)
+    values = [certify.min_entropy_bound(2 + i * 0.08) for i in range(11)]
+    assert values == sorted(values)
+
+
+def test_certify_uses_safety_margin():
+    chsh = {"S": 2.8, "sigma": 0.1,
+            "shots_per_setting": {(0, 0): 100, (0, 1): 100, (1, 0): 100, (1, 1): 100}}
+    cert = certify.certify(chsh)
+    assert cert["s_safe"] == pytest.approx(2.5)
+    assert cert["per_round_safe"] < cert["per_round"]
+    assert cert["rounds"] == 400 and cert["setting_bits_spent"] == 800
+    assert cert["certified_bits"] == pytest.approx(400 * certify.min_entropy_bound(2.5))
+
+
+def test_bell_run_reports_certified_randomness():
+    qr = QuantumRandom(n_qubits=8, shots=2000, debias="xor", bell_test=True)
+    cert = qr.report()["bell"]["certified"]
+    assert cert["per_round"] > 0.5                      # ideal simulator: S near 2.83
+    assert 0 < cert["per_round_safe"] <= cert["per_round"] <= 1
+    assert cert["certified_bits"] < cert["setting_bits_spent"]   # no expansion in this demo
