@@ -88,6 +88,10 @@ and hardware; only quantum computers cost credits.
 
 Keep API keys out of the code: published Qollab code is public.
 
+**Not yet tested on hardware:** we had no Qollab credits during the hackathon, so this path
+has been checked against IonQ's Qiskit backend objects and the IonQ remote simulators, but
+not run on a real quantum computer.
+
 ### In your own code
 
 ```python

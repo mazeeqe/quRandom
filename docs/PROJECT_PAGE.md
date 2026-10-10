@@ -114,6 +114,10 @@ trapped-ion hardware. There is no login or key to set up, because Qollab provide
 
 Judges don't need hardware; it isn't required or scored.
 
+**Not yet tested on hardware:** we had no Qollab credits during the hackathon, so this path
+has been checked against IonQ's Qiskit backend objects and the IonQ remote simulators, but
+not run on a real quantum computer.
+
 ## Honest notes
 
 - Simulators are classical programs, so on them the bits are *simulated*
