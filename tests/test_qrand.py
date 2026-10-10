@@ -1,6 +1,6 @@
 import random
 import pytest
-from qrand import QuantumRandom, EntropyExhausted, stats
+from qrand import QuantumRandom, EntropyExhausted, is_hardware, stats
 
 
 class FakeResult:
@@ -99,3 +99,18 @@ def test_chi2_uniform_p():
     assert stats.chi2_uniform_p([200, 100, 100, 100, 100, 100]) < 0.01
     with pytest.raises(ValueError):
         stats.chi2_uniform_p([1, 2, 3])
+
+
+def test_is_hardware():
+    from qiskit.providers.basic_provider import BasicSimulator
+
+    class IonQQPUBackend:  # same class and name as qiskit-ionq's hardware backend
+        name = "ionq_qpu.forte-1"
+
+    class IonQSimulatorBackend:
+        name = "ionq_simulator"
+
+    assert is_hardware(IonQQPUBackend())
+    assert not is_hardware(IonQSimulatorBackend())
+    assert not is_hardware(BasicSimulator())
+    assert not QuantumRandom(shots=64).report()["hardware"]

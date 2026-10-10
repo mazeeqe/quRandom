@@ -120,6 +120,7 @@ simulators: IonQ backends on Qollab accept one job per run.
 | Key | Contents |
 | --- | --- |
 | `backend`, `qubits`, `shots`, `debias` | the settings used |
+| `hardware` | `True` on a real quantum computer, `False` on any simulator |
 | `per_qubit_p1` | list with P(measure 1) for each qubit; a fair qubit is near 0.5 |
 | `raw`, `debiased` | health tests for the raw and the debiased bits (below) |
 | `warnings` | list of warnings, for example when a backend returned counts only |
@@ -151,6 +152,22 @@ The same tests are available on their own in `qrand.stats`:
 A fair random walk of `n` steps ends within `±2√n` about 95% of the time. If bits are biased
 toward 1 with P(1) = p, the walk drifts by about `(2p − 1) × n`, so the drift grows faster than
 the spread and becomes visible with enough steps.
+
+## Simulator or real hardware?
+
+`is_hardware(backend)` returns `True` for a real quantum computer and `False` for any simulator:
+
+```python
+from qrand import is_hardware
+is_hardware(backend)
+```
+
+It recognises IonQ's hardware backends (named `ionq_qpu...`). The IonQ simulators, IBM noise
+models and Qiskit's `BasicSimulator` count as simulators.
+
+On Qollab, running on hardware needs no code change and no API key: pick an IonQ quantum computer
+in **Select QPU** and approve the credit cost. Both IonQ simulators and hardware accept one job
+per run, which is what qrand sends.
 
 ## Other attributes
 

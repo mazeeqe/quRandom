@@ -76,6 +76,19 @@ ones."
 physically random. Everything runs in one job, so it works within IonQ's limit. It's MIT
 licensed and runs on Qollab. Thanks for watching."
 
+## Optional: a real hardware run
+
+If you have Qollab credits, a short hardware run makes a strong last scene. Record it separately,
+since IonQ's queue can take a while, and keep shots low to limit the cost.
+
+**Show:** pick **IonQ Forte 1** under *Quantum computer*, approve the credit estimate, then point
+at `(real quantum hardware)` in the output and at the random walk.
+
+**Say:** "And this is the same code on IonQ's real trapped-ion computer. No code changes: these
+bits come from real qubits, so they're physically random."
+
+To keep the video under 3 minutes, shorten scene 3 or 5.
+
 ## After recording
 
 - Check the length: 2:00 to 3:00.

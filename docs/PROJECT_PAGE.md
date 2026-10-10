@@ -93,11 +93,33 @@ qr = QuantumRandom(backend, n_qubits=8, shots=512, debias="xor")
 qr.randint(1, 6)
 ```
 
+## Run it on real quantum hardware
+
+Everything above runs on free simulators. With Qollab credits, the same code runs on real IonQ
+trapped-ion hardware. There is no login or key to set up, because Qollab provides the backend.
+
+1. **Try the free simulator of the same machine first.** Pick **IonQ Forte 1** under *Remote
+   simulator*. It uses IonQ's noise model of that machine and costs nothing.
+2. **Check the machine is online.** Offline machines show in the Select QPU dialog, and
+   maintenance is posted at [status.ionq.co](https://status.ionq.co).
+3. **Pick the quantum computer.** Choose **IonQ Forte 1** or **IonQ Forte Enterprise 1** under
+   *Quantum computer*.
+4. **Keep shots low at first.** Cost grows with shots. 512 shots × 8 qubits already gives about
+   500 die rolls with `xor`.
+5. **Approve the price.** The runner shows an estimated cost next to your balance and waits.
+   Decline and nothing is charged. The final charge can differ a little from the estimate.
+6. **Read the output.** The console says `(real quantum hardware)` next to the backend name, and
+   the closing note says the bits are physically random. Waiting in IonQ's queue can take a
+   while; the console prints a predicted wait.
+
+Judges don't need hardware; it isn't required or scored.
+
 ## Honest notes
 
 - Simulators are classical programs, so on them the bits are *simulated*
   quantum randomness. Only real quantum hardware is physically random.
-  Run the same code on an IonQ QPU (credits) for that.
+  Run the same code on an IonQ quantum computer (credits) for that; the demo
+  detects hardware and says so.
 - IonQ's ideal simulator returns only counts (how often each outcome came up),
   not the order of the shots. qrand then rebuilds the shots and restores a
   random order with the OS random generator, and prints a warning. The

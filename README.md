@@ -66,6 +66,28 @@ On Qollab, these appear under **Run settings** in the Select QPU dialog. Locally
 | `debias` | `xor` | `xor`, `von_neumann` or `none` |
 | `plot` | on | draw the chart |
 
+### Run on real quantum hardware
+
+No login or API key is needed. On Qollab, the IonQ account and key belong to Qollab, which
+creates the `backend` for whatever you pick in **Select QPU**. The same code runs on simulators
+and hardware; only quantum computers cost credits.
+
+1. **Try the free simulator of the same machine first.** Pick **IonQ Forte 1** under *Remote
+   simulator*. It uses IonQ's noise model of that machine and costs nothing.
+2. **Check the machine is online.** Offline machines show in the Select QPU dialog, and
+   maintenance is posted at [status.ionq.co](https://status.ionq.co).
+3. **Pick the quantum computer.** Choose **IonQ Forte 1** or **IonQ Forte Enterprise 1** under
+   *Quantum computer*.
+4. **Keep shots low at first.** Cost grows with shots. 512 shots × 8 qubits already gives about
+   500 die rolls with `xor`.
+5. **Approve the price.** The runner shows an estimated cost next to your balance and waits.
+   Decline and nothing is charged. The final charge can differ a little from the estimate.
+6. **Read the output.** The console says `(real quantum hardware)` next to the backend name, and
+   the closing note says the bits are physically random. Waiting in IonQ's queue can take a
+   while; the console prints a predicted wait.
+
+Keep API keys out of the code: published Qollab code is public.
+
 ### In your own code
 
 ```python

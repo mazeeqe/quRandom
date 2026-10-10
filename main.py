@@ -26,7 +26,8 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
 
     print("=== 1. The circuit: Hadamard on every qubit, then measure ===")
     print(qr.circuit.draw("text"))
-    print(f"Backend: {rep['backend']}  |  {qubits} qubits x {shots} shots (one job)\n")
+    kind = "real quantum hardware" if rep["hardware"] else "simulator"
+    print(f"Backend: {rep['backend']} ({kind})  |  {qubits} qubits x {shots} shots (one job)\n")
 
     print("=== 2. Measured bitstring -> number ===")
     bits = qr.bitstring(16)
@@ -79,9 +80,13 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
     for w in rep["warnings"]:
         print("WARNING:", w)
 
-    print("\nNote: simulators are classical programs, so on them the bits are "
-          "simulated quantum randomness. Only real quantum hardware is "
-          "physically random.")
+    if rep["hardware"]:
+        print("\nNote: these bits come from measuring real qubits, so they are physically "
+              "random. Any bias above is the hardware's own noise.")
+    else:
+        print("\nNote: simulators are classical programs, so on them the bits are "
+              "simulated quantum randomness. Only real quantum hardware is "
+              "physically random.")
 
     if plot:
         try:

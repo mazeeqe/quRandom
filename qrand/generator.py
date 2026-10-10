@@ -174,6 +174,7 @@ class QuantumRandom:
         """Bias and health numbers for the raw and debiased bits."""
         return {
             "backend": _backend_name(self.backend),
+            "hardware": is_hardware(self.backend),
             "qubits": self.n_qubits,
             "shots": self.shots,
             "per_qubit_p1": stats.per_qubit_p1(self.raw_shots),
@@ -182,6 +183,15 @@ class QuantumRandom:
             "debias": self.debias,
             "warnings": list(self.warnings),
         }
+
+
+def is_hardware(backend) -> bool:
+    """True for a real quantum computer, False for any simulator.
+
+    IonQ's hardware backends are named ``ionq_qpu...`` (class ``IonQQPUBackend``);
+    simulators, IBM noise models and Qiskit's BasicSimulator never contain "qpu".
+    """
+    return "qpu" in _backend_name(backend).lower() or "QPU" in type(backend).__name__
 
 
 def _backend_name(backend) -> str:
