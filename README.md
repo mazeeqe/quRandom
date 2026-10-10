@@ -29,7 +29,44 @@ Locally, run the demo on Qiskit's built-in simulator:
 python main.py
 ```
 
-In your own code:
+### What the demo shows
+
+One run sends a single circuit job and prints six sections:
+
+1. **The circuit:** a Hadamard gate on every qubit, then a measurement.
+2. **Bitstring → number:** 16 measured bits turned into an integer.
+3. **Is each qubit a fair coin?** P(1) per qubit and health tests, raw vs debiased.
+4. **Random walk:** every bit is a step, `1` up and `0` down. A fair walk of `n` steps ends
+   within `±2√n` about 95% of the time; a bias toward `1` makes it drift out of that range. The
+   demo compares the raw walk with the debiased one.
+5. **Dice, raw vs debiased:** dice rolled from both sets of bits, the share of each face, and a
+   chi-square fairness test.
+6. **Using the numbers:** dice rolls, a float in `[0, 1)` and a shuffle.
+
+With **Plot** on it also draws this chart:
+
+![Demo chart: per-qubit bias, dice raw vs debiased, and two random walks](docs/demo_chart.png)
+
+*This example comes from a test backend with a simulated 3% bias toward `1`: the raw walk
+(orange) ends at +172, outside the ±128 band, while the debiased walk (blue) stays inside. On an
+unbiased simulator both walks stay inside the band.*
+
+The walk and dice comparison only read the bits the job already produced; they don't use up the
+pool or send extra jobs.
+
+### Run settings
+
+On Qollab, these appear under **Run settings** in the Select QPU dialog. Locally,
+`python main.py` uses the defaults; to try other values, change them in the `def main(...)` line.
+
+| Setting | Default | Notes |
+| --- | --- | --- |
+| `shots` | 512 | more shots give more numbers and make a bias easier to see in the walk |
+| `qubits` | 8 | must be even with `xor` |
+| `debias` | `xor` | `xor`, `von_neumann` or `none` |
+| `plot` | on | draw the chart |
+
+### In your own code
 
 ```python
 from qrand import QuantumRandom
@@ -38,6 +75,17 @@ qr = QuantumRandom(backend, n_qubits=8, shots=512, debias="xor")  # backend=None
 qr.randint(1, 6)
 qr.random()
 qr.report()  # per-qubit bias and NIST-style health tests
+```
+
+The helpers behind the demo work on any bitstring:
+
+```python
+from qrand import stats
+
+walk = stats.random_walk(qr.raw_bits)          # positions, starting at 0
+rolls = stats.dice_from_bits(qr.pool_bits())   # die rolls 1-6
+counts = [rolls.count(f) for f in range(1, 7)]
+stats.chi2_uniform_p(counts)                   # >= 0.01: consistent with a fair die
 ```
 
 ## Tests
@@ -49,10 +97,11 @@ pytest
 ## Project layout
 
 ```
-qrand/       library: generator (entropy pool, debiasing) and stats (health tests)
-main.py      Qollab demo entry point
+qrand/       library: generator (entropy pool, debiasing) and stats (health tests,
+             random walk, dice, chi-square)
+main.py      Qollab demo: console sections and chart
 tests/       pytest tests
-docs/        project page and demo script
+docs/        usage guide, project page, demo script, example chart
 notebooks/   experiments
 ```
 
