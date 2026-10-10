@@ -7,9 +7,11 @@ from qrand import QuantumRandom, EntropyExhausted
 
 try:
     backend  # pre-created by Qollab from the Select QPU dialog
+    RUNNING_LOCALLY = False
 except NameError:  # running locally: fall back to Qiskit's simulator
     from qiskit.providers.basic_provider import BasicSimulator
     backend = BasicSimulator()
+    RUNNING_LOCALLY = True
 
 
 def bar(p, width=30):
@@ -75,4 +77,6 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
             pass
 
 
-main()
+# Qollab calls main() itself after the script finishes, so only call it when run locally.
+if RUNNING_LOCALLY:
+    main()

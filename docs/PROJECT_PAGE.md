@@ -68,7 +68,11 @@ qr.randint(1, 6)
 ## Built during the hackathon
 
 Everything here (library, bias analysis, debiasing, tests and demo) was built
-during the Qollab Hackathon window. <!-- If you reused older code, disclose it here. -->
+during the Qollab Hackathon window (Oct 9-11, 2026). No pre-existing project
+code was reused. The code was written with the help of AI tools (Claude).
+It builds on Qiskit, and the health tests follow the ideas of NIST SP 800-22.
+
+Source: https://github.com/mazeeqe/quRandom
 
 License: MIT.
 

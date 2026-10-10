@@ -9,7 +9,7 @@ description = "Noise-aware quantum random numbers - Qollab Hackathon submission"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
-dependencies = ["qiskit>=1.0"]
+dependencies = ["qiskit>=2.0,<3"]
 
 [project.optional-dependencies]
 plot = ["matplotlib"]

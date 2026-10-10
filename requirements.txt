@@ -1,0 +1,2 @@
+# Qollab installs these. Matplotlib ships with Qollab's Python runtime.
+qiskit>=2.0,<3
