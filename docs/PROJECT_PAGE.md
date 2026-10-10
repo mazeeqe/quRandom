@@ -61,7 +61,9 @@ qr.randint(1, 6)
 - Simulators are classical programs, so on them the bits are *simulated*
   quantum randomness. Only real quantum hardware is physically random.
   Run the same code on an IonQ QPU (credits) for that.
-- IonQ's ideal simulators draw counts client-side with a classical RNG. The
+- IonQ's ideal simulator returns only counts (how often each outcome came up),
+  not the order of the shots. qrand then rebuilds the shots and restores a
+  random order with the OS random generator, and prints a warning. The
   noise-model simulators return per-shot results, which is what qrand needs.
 - Not for cryptographic use.
 

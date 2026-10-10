@@ -69,6 +69,14 @@ def test_counts_fallback_warns():
     assert qr.warnings
 
 
+def test_counts_fallback_is_not_grouped_by_outcome():
+    qr = QuantumRandom(BiasedBackend(0.5, counts=True), n_qubits=4, shots=512, debias="none")
+    # Grouped shots change outcome at most 15 times (16 possible outcomes);
+    # a random order changes outcome on almost every shot.
+    changes = sum(a != b for a, b in zip(qr.raw_shots, qr.raw_shots[1:]))
+    assert changes > 400
+
+
 def test_invalid_args():
     with pytest.raises(ValueError): QuantumRandom(n_qubits=3, debias="xor")
     with pytest.raises(ValueError): QuantumRandom(debias="nope")

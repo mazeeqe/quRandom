@@ -7,6 +7,7 @@ job per run.
 """
 from __future__ import annotations
 
+import random
 from typing import List, Optional, Sequence, TypeVar
 
 from qiskit import QuantumCircuit
@@ -79,9 +80,13 @@ class QuantumRandom:
         if not shots:  # backend gave only counts: order of shots is lost
             counts = result.get_counts()
             shots = [k.replace(" ", "") for k, v in counts.items() for _ in range(int(v))]
+            # Expanded counts are grouped by outcome (all '0000' shots, then all '0001'...),
+            # which makes the bit order anything but random. Restore a random order.
+            random.SystemRandom().shuffle(shots)
             self.warnings.append(
-                "Backend returned counts without per-shot memory; shot order is "
-                "lost, so the bit order may be less random.")
+                "Backend returned counts without per-shot memory, so shot order was "
+                "restored with the OS random generator. Use a noise-model simulator "
+                "for per-shot quantum results.")
         self.raw_shots = shots
         self.raw_bits = "".join(shots)
         self._pool, self._pos = self._extract(shots), 0
