@@ -6,6 +6,7 @@ and set Shots / Qubits / Debias under Run settings.
 import math
 
 from qrand import EntropyExhausted, QuantumRandom, stats
+from qrand import bell as bell_module
 
 try:
     backend  # noqa: B018 - raises NameError unless Qollab pre-created it (Select QPU dialog)
@@ -40,16 +41,33 @@ def randomness_score(r):
     }
 
 
+def chsh_verdict(chsh):
+    if math.isnan(chsh["S"]):
+        return "Not enough shots for every setting pair: raise Shots."
+    if chsh["S"] > chsh["classical_limit"]:
+        return (f"S is {chsh['sigmas_above_classical']:.1f} standard errors above 2: no classical "
+                "source of correlated bits can produce this.")
+    return ("S is not above 2 here, so these results could also come from a classical source. "
+            "Noise can wash out quantum correlations.")
+
+
+def format_s(chsh):
+    return "-" if not chsh or math.isnan(chsh["S"]) else f"{chsh['S']:.2f} ± {chsh['sigma']:.2f}"
+
+
 def bar(p, width=30):
     return "#" * round(p * width) + "." * (width - round(p * width))
 
 
-def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = True):
-    qr = QuantumRandom(backend, n_qubits=qubits, shots=shots, debias=debias)
+def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = True, bell: bool = True):
+    qr = QuantumRandom(backend, n_qubits=qubits, shots=shots, debias=debias, bell_test=bell)
     rep = qr.report()
 
     print("=== 1. The circuit: Hadamard on every qubit, then measure ===")
     print(qr.circuit.draw("text"))
+    if bell:
+        print(f"Qubits 0-{qubits - 1}: random numbers. Qubits {qubits}-{qubits + 3}: Bell test "
+              "(two setting coins and an entangled pair), in the same circuit and job.")
     kind = "real quantum hardware" if rep["hardware"] else "simulator"
     print(f"Backend: {rep['backend']} ({kind})  |  {qubits} qubits x {shots} shots (one job)\n")
 
@@ -118,6 +136,24 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
     for w in rep["warnings"]:
         print("WARNING:", w)
 
+    chsh = rep["bell"]
+    if chsh:
+        print("\n=== 7. Is it really quantum? A Bell test (CHSH) ===")
+        print("Two entangled qubits are measured along directions picked by two quantum coin flips.")
+        for (sa, sb), e in chsh["correlations"].items():
+            print(f"settings A{sa} B{sb}: correlation {e:+.3f}  (quantum prediction "
+                  f"{bell_module.expected_correlation(sa, sb):+.3f}, "
+                  f"{chsh['shots_per_setting'][(sa, sb)]} shots)")
+        print(f"S = {chsh['S']:.3f} +/- {chsh['sigma']:.3f}   "
+              f"(classical limit {chsh['classical_limit']:.0f}, "
+              f"quantum prediction {chsh['quantum_prediction']:.3f})")
+        print(f"{chsh_verdict(chsh)}")
+        if chsh["S"] > chsh["quantum_prediction"]:
+            print("(S above 2.83 is sampling noise: the true value can't exceed 2*sqrt(2). "
+                  "More shots narrow the error.)")
+        print("(A demonstration, not a certificate: a real Bell test also needs the two sides far "
+              "apart and other loopholes closed.)")
+
     raw_walk_end, deb_walk_end = walks["raw"][-1], walks[debias][-1]
     min_p = {name: min(r[key] for key, _ in HEALTH_TESTS if not math.isnan(r[key]))
              for name, r in (("raw", raw), ("debiased", deb))}
@@ -126,7 +162,8 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
           f"{shots} | {debias} | {max(rep['per_qubit_p1'], key=lambda p: abs(p - 0.5)):.3f} | "
           f"{raw['ones_fraction']:.4f} | {deb['ones_fraction']:.4f} | {raw_walk_end:+d} | "
           f"{deb_walk_end:+d} | {min_p['raw']:.3f} | {min_p['debiased']:.3f} | "
-          f"{raw['min_entropy']:.3f} | {deb['min_entropy']:.3f} |")
+          f"{raw['min_entropy']:.3f} | {deb['min_entropy']:.3f} | "
+          f"{format_s(chsh)} |")
 
     if rep["hardware"]:
         print("\nNote: these bits come from measuring real qubits, so they are physically "
@@ -174,6 +211,8 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
         fig.tight_layout()
         plt.show()
         plot_randomness_report(plt, raw_bits, deb_bits, raw, deb, debias, raw_c, deb_c)
+        if chsh:
+            plot_bell(plt, chsh)
 
 
 def plot_randomness_report(plt, raw_bits, deb_bits, raw, deb, debias, raw_c, deb_c):
@@ -216,6 +255,36 @@ def plot_randomness_report(plt, raw_bits, deb_bits, raw, deb, debias, raw_c, deb
            ylabel="correlation")
     ax.legend(fontsize=7, loc="upper right", title="dashed: fair range", title_fontsize=7)
 
+    fig.tight_layout()
+    plt.show()
+
+
+def plot_bell(plt, chsh):
+    """Third chart: the four correlations and S against the classical limit."""
+    fig, ax = plt.subplots(1, 2, figsize=(10, 3.4))
+    keys = list(chsh["correlations"])
+    labels = [f"A{a} B{b}" for a, b in keys]
+    ax[0].bar(range(4), [chsh["correlations"][k] for k in keys], color="#5b6cff",
+              label="measured")
+    ax[0].scatter(range(4), [bell_module.expected_correlation(*k) for k in keys], color="k",
+                  marker="_", s=600, zorder=3, label="quantum prediction")
+    ax[0].axhline(0, color="k", lw=0.8)
+    ax[0].set_xticks(range(4), labels)
+    ax[0].set(title="Correlation per setting pair", ylim=(-1, 1), ylabel="P(same) - P(different)")
+    ax[0].legend(fontsize=8, loc="lower left")
+
+    s_value, sigma = chsh["S"], chsh["sigma"]
+    ax[1].axvspan(0, chsh["classical_limit"], color="red", alpha=0.08,
+                  label="possible without quantum physics")
+    ax[1].barh([0], [s_value], xerr=[sigma], color="#5b6cff", height=0.4, capsize=6,
+               label="measured S")
+    ax[1].axvline(chsh["classical_limit"], color="red", ls="--",
+                  label=f"classical limit ({chsh['classical_limit']:.0f})")
+    ax[1].axvline(chsh["quantum_prediction"], color="k", ls=":",
+                  label=f"quantum prediction ({chsh['quantum_prediction']:.2f})")
+    ax[1].set(title=f"Bell test: S = {s_value:.3f} ± {sigma:.3f}", xlim=(min(0, s_value - 0.5), 3.2),
+              ylim=(-0.5, 1.1), yticks=[])
+    ax[1].legend(fontsize=7, loc="upper left", ncol=2)
     fig.tight_layout()
     plt.show()
 

@@ -13,7 +13,7 @@ from typing import TypeVar
 
 from qiskit import QuantumCircuit
 
-from . import stats
+from . import bell, stats
 
 T = TypeVar("T")
 DEBIAS_MODES = ("none", "xor", "von_neumann")
@@ -39,10 +39,12 @@ class QuantumRandom:
         keeps a bit only when they differ (keeps ~1/4, removes bias
         completely if shots are independent).
     auto_refill : run another job when the pool runs dry. Leave False on IonQ.
+    bell_test : also run a CHSH Bell test on 4 extra qubits in the same circuit and job.
+        Its bits never enter the pool; the result is in ``bell_result`` and ``report()``.
     """
 
     def __init__(self, backend=None, n_qubits: int = 8, shots: int = 512,
-                 debias: str = "xor", auto_refill: bool = False):
+                 debias: str = "xor", auto_refill: bool = False, bell_test: bool = False):
         if debias not in DEBIAS_MODES:
             raise ValueError(f"debias must be one of {DEBIAS_MODES}")
         if n_qubits < 1 or shots < 2:
@@ -53,9 +55,11 @@ class QuantumRandom:
             from qiskit.providers.basic_provider import BasicSimulator
             backend = BasicSimulator()
         self.backend, self.n_qubits, self.shots = backend, n_qubits, shots
-        self.debias, self.auto_refill = debias, auto_refill
+        self.debias, self.auto_refill, self.bell_test = debias, auto_refill, bell_test
         self.warnings: list[str] = []
-        self.circuit = self._build_circuit(n_qubits)
+        self.circuit = self._build_circuit(n_qubits, bell_test)
+        self.bell_shots: list[str] = []
+        self.bell_result: dict | None = None
         self._pool, self._pos = "", 0
         self.raw_shots: list[str] = []
         self.raw_bits = ""
@@ -63,10 +67,14 @@ class QuantumRandom:
 
     # ---------------------------------------------------------------- circuit
     @staticmethod
-    def _build_circuit(n: int) -> QuantumCircuit:
-        qc = QuantumCircuit(n, n)
+    def _build_circuit(n: int, bell_test: bool = False) -> QuantumCircuit:
+        extra = bell.BELL_QUBITS if bell_test else 0
+        qc = QuantumCircuit(n + extra, n + extra)
         qc.h(range(n))                   # |0> -> (|0>+|1>)/sqrt(2)
         qc.measure(range(n), range(n))   # collapse: each qubit is a coin flip
+        if bell_test:  # Bell test on the extra qubits n..n+3, same circuit, same job
+            idx = list(range(n, n + extra))
+            bell.add_chsh(qc, idx, idx)
         return qc
 
     # ------------------------------------------------------------------- pool
@@ -88,6 +96,12 @@ class QuantumRandom:
                 "Backend returned counts without per-shot memory, so shot order was "
                 "restored with the OS random generator. Use a noise-model simulator "
                 "for per-shot quantum results.")
+        if self.bell_test:
+            # Qiskit strings are MSB-left, so the Bell clbits (highest indices) come first.
+            k = bell.BELL_QUBITS
+            self.bell_shots = [s[:k] for s in shots]
+            self.bell_result = bell.chsh_from_shots(self.bell_shots)
+            shots = [s[k:] for s in shots]
         self.raw_shots = shots
         self.raw_bits = "".join(shots)
         self._pool, self._pos = self._extract(shots), 0
@@ -182,6 +196,7 @@ class QuantumRandom:
             "raw": stats.health_report(self.raw_bits),
             "debiased": stats.health_report(self._pool),
             "debias": self.debias,
+            "bell": self.bell_result,
             "warnings": list(self.warnings),
         }
 

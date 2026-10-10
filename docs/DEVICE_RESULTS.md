@@ -25,8 +25,9 @@ All simulators are free, including the IBM noise models and the IonQ remote simu
 | raw / debiased walk end | where the random walk ended; a fair walk of `n` steps ends within `±2√n` about 95% of the time (±128 for 4096 raw steps, ±91 for 2048 `xor` steps) |
 | raw / debiased lowest p | lowest p-value of the five health tests; `>= 0.01` passes |
 | raw / debiased min-entropy | min-entropy per bit; best possible is 0.943 for 4096 raw bits and 0.920 for 2048 `xor` bits |
+| Bell S | Bell test value with its standard error; above 2 is impossible classically, 2.83 is the quantum prediction; noise pulls it down |
 
 ## Results
 
-| backend | type | qubits | shots | debias | worst qubit P(1) | raw share of 1s | debiased share of 1s | raw walk end | debiased walk end | raw lowest p | debiased lowest p | raw min-entropy | debiased min-entropy |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| backend | type | qubits | shots | debias | worst qubit P(1) | raw share of 1s | debiased share of 1s | raw walk end | debiased walk end | raw lowest p | debiased lowest p | raw min-entropy | debiased min-entropy | Bell S |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

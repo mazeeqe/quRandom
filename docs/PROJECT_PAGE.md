@@ -71,6 +71,25 @@ Every run gets a **randomness score** for its raw and its debiased bits:
 The randomness report chart draws all of it, including every bit as a pixel, so a bias or a
 pattern is visible at a glance.
 
+## Is it really quantum? A built-in Bell test
+
+Random numbers from a simulator could in principle come from a hidden classical program. A
+**Bell test** checks for something no classical source can do. Every run adds four qubits to the
+same circuit (still one job):
+
+- two **setting coins**: qubits in superposition whose measurement picks, at random, the direction
+  in which each side is measured
+- an **entangled pair** `(|00⟩ + |11⟩)/√2`, measured along 0° or 90° on one side and 45° or −45° on
+  the other, as the coins decide
+
+For each of the four setting pairs, qrand computes the correlation `E = P(same) − P(different)`,
+then `S = E(0,0) + E(0,1) + E(1,0) − E(1,1)`. Any classical source gives `S ≤ 2`; quantum
+mechanics predicts `2√2 ≈ 2.83`. The demo prints S with its standard error and how many standard
+errors it lies above 2.
+
+This is a demonstration, not a certificate of randomness: a rigorous Bell test also needs the two
+sides far apart and other loopholes closed, which a single chip or a simulator can't provide.
+
 ## Built for Qollab's one-job-per-run IonQ rule
 
 IonQ backends accept one job per run, so qrand runs **a single circuit job**
@@ -84,7 +103,8 @@ or **Qubits**.
 2. In **Select QPU**, choose the built-in simulator or an **IonQ remote
    simulator** (for example *IonQ Forte 1*). All are free.
 3. Under **Run settings** set **Shots** (default 512), **Qubits** (8, even
-   number), **Debias** (`xor`, `von_neumann` or `none`) and **Plot** (on).
+   number), **Debias** (`xor`, `von_neumann` or `none`), **Plot** (on) and
+   **Bell** (on: adds the Bell test).
 4. Read the console:
    1. the circuit
    2. a measured bitstring converted to a number
@@ -95,13 +115,17 @@ or **Qubits**.
       is inside the range of fair walks
    5. dice from raw vs debiased bits, with the chi-square fairness test
    6. using the numbers: dice rolls, a float and a shuffle
-   7. a result line you can collect across backends to compare devices
-5. Look at the two charts:
+   7. the Bell test: correlation for each setting pair, S with its error, and
+      how far above the classical limit of 2 it is
+   8. a result line you can collect across backends to compare devices
+5. Look at the three charts:
    - per-qubit bias, dice raw vs debiased, and the two random walks inside the
      band where fair walks stay
    - the **randomness report**: every bit drawn as a pixel (random bits look
      like TV static), the p-value of each test, and the correlation between
      each bit and the next 16 bits
+   - the **Bell test**: the four correlations against the quantum prediction,
+     and S against the classical limit
 
 Tip: try an IonQ noise-model simulator to see real noise. More **Shots** make
 a bias easier to see in the walk. The walk and the dice comparison only read

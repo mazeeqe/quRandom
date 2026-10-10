@@ -1,4 +1,4 @@
-# Demo video script (target 2:30)
+# Demo video script (target 2:40)
 
 The rules ask for 2 to 3 minutes showing the project working. A screen recording with voiceover
 is enough.
@@ -13,12 +13,12 @@ is enough.
    job per run, so press **Stop** and **Run** again to repeat.
 4. Use Chrome, Edge, Brave, Opera or Firefox 153+ (Safari can't run projects yet). Zoom the
    browser so the console text is readable in the recording.
-5. Settings for both runs: **Shots 512, Qubits 8, Debias xor, Plot on**.
+5. Settings for both runs: **Shots 512, Qubits 8, Debias xor, Plot on, Bell on**.
 
 ## Script
 
-About 250 words of voiceover (about 2 minutes at a calm pace), leaving time for clicking and
-pauses to reach 2:30.
+About 290 words of voiceover (about 2:15 at a calm pace). With clicking and pauses it comes to
+about 2:40, inside the 3-minute limit; trim scene 3 if you run long.
 
 ### 1. Hook (0:00–0:15)
 
@@ -38,11 +38,12 @@ shot, and 512 shots fill a pool of bits in a single job."
 
 ### 3. Bits become numbers (0:45–1:05)
 
-**Show:** section 2 (bitstring → number), then section 6 (dice rolls, float, shuffle).
+**Show:** section 2 (bitstring → number), then section 6 (dice rolls, float, shuffle) and the
+dice chart.
 
 **Say:** "The measured bits form a binary string, and that string becomes a number. From the
 pool we draw dice rolls, decimals and shuffles. Rejection sampling keeps every result equally
-likely."
+likely, and the dice chart shows each face coming up about one time in six."
 
 ### 4. Noise and the random walk (1:05–1:50)
 
@@ -60,25 +61,24 @@ the bias. Debiasing combines pairs of qubits, and the blue walk stays inside."
 looks fair. If it leaned toward one, the orange walk would drift out, and debiasing would bring
 it back."
 
-### 5. Fair dice (1:50–2:15)
+### 5. Is it really quantum? (1:50–2:15)
 
-**Show:** the dice chart and the chi-square lines in section 5.
+**Show:** section 7 and the Bell test chart, from either run.
 
-**Say:** "We also roll dice from the raw and the debiased bits. Every face should come up about
-one time in six, and the chi-square test confirms that these dice are consistent with fair
-ones."
+**Say:** "But could a classical program fake all this? Each run also includes a Bell test: two
+entangled qubits, measured in directions picked by quantum coin flips. No classical source can
+push the score S above two. We get about 2.8, many standard errors above the limit, just as
+quantum mechanics predicts."
 
-**Show (if time allows):** the randomness report chart.
-
-**Say:** "Every run also gets a randomness report: each bit as a pixel, which should look like
-static, plus the test results and a check for patterns between bits."
+If noise pulls S below 2 on the noise-model run, show the built-in simulator run for this scene.
 
 ### 6. Honest close (2:15–2:30)
 
 **Show:** the "Honest notes" section of the project page, then the license.
 
 **Say:** "On simulators this is simulated quantum randomness; on real quantum hardware it is
-physically random. Everything runs in one job, so it works within IonQ's limit. It's MIT
+physically random. Random numbers and the Bell test share one circuit and one job, so it works
+within IonQ's limit. It's MIT
 licensed and runs on Qollab. Thanks for watching."
 
 ## Optional: a real hardware run

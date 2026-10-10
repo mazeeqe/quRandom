@@ -1,3 +1,4 @@
+import math
 import random
 
 import pytest
@@ -160,3 +161,30 @@ def test_min_entropy_and_autocorrelation():
     assert max(map(abs, stats.autocorrelation(fair))) <= stats.autocorr_limit(len(fair))
     report = QuantumRandom(shots=256).report()["raw"]
     assert {"min_entropy", "max_autocorr"} <= report.keys()
+
+
+def test_chsh_math_on_constructed_shots():
+    from qrand import bell
+    # 'B A b a': outputs always equal -> E = +1 for every setting pair -> S = 1 + 1 + 1 - 1 = 2
+    same = ["0000", "1100", "0001", "1101", "0010", "1110", "0011", "1111"]
+    r = bell.chsh_from_shots(same * 10)
+    assert r["S"] == 2.0
+    assert all(n == 20 for n in r["shots_per_setting"].values())
+    # outputs equal except for settings (1, 1), where they differ -> S = 4 (impossible quantumly)
+    best = ["0000", "1100", "0001", "1101", "0010", "1110", "0111", "1011"]
+    assert bell.chsh_from_shots(best * 10)["S"] == 4.0
+    assert math.isnan(bell.chsh_from_shots(["0000"])["S"])  # missing setting pairs
+
+
+def test_bell_test_on_simulator_beats_classical_limit():
+    qr = QuantumRandom(n_qubits=4, shots=4000, debias="none", bell_test=True)
+    chsh = qr.report()["bell"]
+    assert chsh["S"] > 2.4 and abs(chsh["S"] - chsh["quantum_prediction"]) < 4 * chsh["sigma"]
+    # Bell qubits are split off: the pool only holds the 4 random-number qubits
+    assert len(qr.raw_shots[0]) == 4 and len(qr.raw_bits) == 4 * 4000
+    assert qr.circuit.num_qubits == 8
+
+
+def test_bell_test_with_classical_backend_stays_below_limit():
+    qr = QuantumRandom(BiasedBackend(0.5), n_qubits=4, shots=2000, debias="none", bell_test=True)
+    assert abs(qr.report()["bell"]["S"]) < 2

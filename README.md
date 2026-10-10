@@ -46,6 +46,8 @@ One run sends a single circuit job and prints six sections:
 5. **Dice, raw vs debiased:** dice rolled from both sets of bits, the share of each face, and a
    chi-square fairness test.
 6. **Using the numbers:** dice rolls, a float in `[0, 1)` and a shuffle.
+7. **Is it really quantum? A Bell test (CHSH):** the correlations of an entangled pair and the
+   Bell score S, against the classical limit of 2.
 
 With **Plot** on it also draws this chart:
 
@@ -75,6 +77,30 @@ pool or send extra jobs.
 The run ends with a **result line**. Collect lines from different backends in
 [docs/DEVICE_RESULTS.md](docs/DEVICE_RESULTS.md) to compare how fair each device's qubits are.
 
+### The Bell test
+
+Random numbers from a simulator could in principle come from a hidden classical program. A
+**Bell test** checks for something no classical source can do. Every run adds four qubits to the
+same circuit (still one job):
+
+- two **setting coins**: qubits in superposition whose measurement picks, at random, the direction
+  in which each side is measured
+- an **entangled pair** `(|00⟩ + |11⟩)/√2`, measured along 0° or 90° on one side and 45° or −45° on
+  the other, as the coins decide
+
+For each of the four setting pairs, qrand computes the correlation `E = P(same) − P(different)`,
+then `S = E(0,0) + E(0,1) + E(1,0) − E(1,1)`. Any classical source gives `S ≤ 2`; quantum
+mechanics predicts `2√2 ≈ 2.83`. The demo prints S with its standard error and how many standard
+errors it lies above 2.
+
+This is a demonstration, not a certificate of randomness: a rigorous Bell test also needs the two
+sides far apart and other loopholes closed, which a single chip or a simulator can't provide.
+
+![Bell test: correlations per setting pair and S against the classical limit](docs/bell_test.png)
+
+*A 512-shot run on Qiskit's built-in simulator: S = 2.99 ± 0.12, 8 standard errors above the
+classical limit. A value above 2.83 is sampling noise; more shots narrow the error.*
+
 ### Run settings
 
 On Qollab, these appear under **Run settings** in the Select QPU dialog. Locally,
@@ -85,7 +111,8 @@ On Qollab, these appear under **Run settings** in the Select QPU dialog. Locally
 | `shots` | 512 | more shots give more numbers and make a bias easier to see in the walk |
 | `qubits` | 8 | must be even with `xor` |
 | `debias` | `xor` | `xor`, `von_neumann` or `none` |
-| `plot` | on | draw the chart |
+| `plot` | on | draw the charts |
+| `bell` | on | add the Bell test: 4 extra qubits in the same circuit and job |
 
 ### Run on real quantum hardware
 

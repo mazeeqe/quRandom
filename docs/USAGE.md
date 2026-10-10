@@ -31,6 +31,7 @@ QuantumRandom(backend=None, n_qubits=8, shots=512, debias="xor", auto_refill=Fal
 | `shots` | `512` | `>= 2` | Number of shots in the job. |
 | `debias` | `"xor"` | `"none"`, `"xor"`, `"von_neumann"` | How to remove measurement bias (see below). |
 | `auto_refill` | `False` | `True` / `False` | Run another job when the pool runs out. **Keep `False` on IonQ**, which allows one job per run. |
+| `bell_test` | `False` | `True` / `False` | Add a CHSH Bell test on 4 extra qubits in the same circuit and job. Its bits never enter the pool. |
 
 Invalid values raise `ValueError`.
 
@@ -173,6 +174,29 @@ A fair random walk of `n` steps ends within `±2√n` about 95% of the time. If 
 toward 1 with P(1) = p, the walk drifts by about `(2p − 1) × n`, so the drift grows faster than
 the spread and becomes visible with enough steps.
 
+## Bell test
+
+With `bell_test=True`, the circuit gets 4 extra qubits (so `n_qubits + 4` in total; keep that
+within the backend's limit, e.g. 24 on Qollab's built-in simulator). The result is in
+`qr.bell_result` and `qr.report()["bell"]` (`None` when the test is off):
+
+| Key | Meaning |
+| --- | --- |
+| `S` | the CHSH value; `> 2` is impossible for any classical source, quantum mechanics predicts 2.83 |
+| `sigma` | standard error of `S` |
+| `sigmas_above_classical` | `(S − 2) / sigma` |
+| `correlations` | `{(a, b): E}` for the four setting pairs, `E = P(same) − P(different)` |
+| `shots_per_setting` | shots that landed on each setting pair (about `shots / 4` each) |
+| `quantum_prediction`, `classical_limit` | 2.828 and 2 |
+
+The settings are picked per shot by two qubits in superposition, so every setting pair gets
+about a quarter of the shots. With 512 shots the standard error of `S` is about 0.12. The test
+only needs counts, so it also works on simulators that return counts without per-shot results.
+
+The `qrand.bell` module has the pieces: `add_chsh(circuit, qubits, clbits)` appends the test to
+any circuit, `chsh_from_shots(shots)` computes the result from 4-character shot strings, and
+`expected_correlation(a, b)` gives the quantum prediction for each setting pair.
+
 ## Simulator or real hardware?
 
 `is_hardware(backend)` returns `True` for a real quantum computer and `False` for any simulator:
@@ -209,7 +233,8 @@ per run, which is what qrand sends.
 | Shots | 512 | more shots, more numbers |
 | Qubits | 8 | must be even with `xor` |
 | Debias | `xor` | `xor`, `von_neumann` or `none` |
-| Plot | on | draws two charts: per-qubit bias, dice and random walks; then the randomness report (bit images, test p-values, correlations) |
+| Plot | on | draws three charts: per-qubit bias, dice and random walks; the randomness report (bit images, test p-values, correlations); the Bell test |
+| Bell | on | adds the Bell test: 4 extra qubits, so Qubits + 4 must fit the backend |
 
 The demo draws 16 bits, up to 120 die rolls, one float and a 6-letter shuffle (about 600 bits in
 total), so the defaults leave plenty to spare. The random walk and the raw vs debiased dice
