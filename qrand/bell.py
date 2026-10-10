@@ -45,10 +45,10 @@ def add_chsh(qc: QuantumCircuit, qubits: list[int], clbits: list[int]) -> None:
     qc.h(qa)
     qc.cx(qa, qb)                # Bell pair (|00> + |11>) / sqrt(2)
     # Measuring along angle t equals RY(-t) followed by a Z measurement.
-    qc.ry(-ALICE_ANGLES[0], qa)
-    _controlled_ry(qc, -(ALICE_ANGLES[1] - ALICE_ANGLES[0]), a, qa)
-    qc.ry(-BOB_ANGLES[0], qb)
-    _controlled_ry(qc, -(BOB_ANGLES[1] - BOB_ANGLES[0]), b, qb)
+    for setting, target, angles in ((a, qa, ALICE_ANGLES), (b, qb, BOB_ANGLES)):
+        if angles[0]:
+            qc.ry(-angles[0], target)
+        _controlled_ry(qc, -(angles[1] - angles[0]), setting, target)
     qc.measure(qubits, clbits)
 
 

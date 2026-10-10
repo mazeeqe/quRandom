@@ -1,5 +1,7 @@
 # quRandom
 
+![quRandom: noise-aware random numbers from a quantum circuit](docs/images/thumbnail.png)
+
 **qrand**: noise-aware random numbers from a quantum circuit. Submission for the Qollab Hackathon.
 
 Every qubit gets a Hadamard gate and is measured, so each one is a 50/50 coin flip. A single
@@ -9,7 +11,8 @@ bias (noisy hardware often reads `1` a little more than `0`) and can remove it w
 
 New here? Start with the tutorial notebook,
 [notebooks/qrand_tutorial.ipynb](notebooks/qrand_tutorial.ipynb). See [docs/USAGE.md](docs/USAGE.md) for the full API: ranges, bit costs and how many numbers a
-job gives you. [docs/PROJECT_PAGE.md](docs/PROJECT_PAGE.md) has the project write-up, and
+job gives you. [docs/PROJECT_PAGE.md](docs/PROJECT_PAGE.md) has the project write-up,
+[docs/PROJECT_CARD.md](docs/PROJECT_CARD.md) explains how to fill in the Qollab Project Card, and
 [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) has the demo video plan.
 
 ## Getting started
@@ -51,15 +54,15 @@ One run sends a single circuit job and prints six sections:
 
 With **Plot** on it also draws this chart:
 
-![Demo chart: per-qubit bias, dice raw vs debiased, and two random walks](docs/demo_chart.png)
+![Demo chart: per-qubit bias, dice raw vs debiased, and two random walks](docs/images/demo_chart.png)
 
 *This example comes from a test backend with a simulated 3% bias toward `1`: the raw walk
-(orange) ends at +172, outside the ±128 band, while the debiased walk (blue) stays inside. On an
+(orange) ends at +294, outside the ±128 band, while the debiased walk (blue) stays inside. On an
 unbiased simulator both walks stay inside the band.*
 
 A second chart, the **randomness report**, shows each run at a glance:
 
-![Randomness report: bit images, test p-values and correlations](docs/randomness_report.png)
+![Randomness report: bit images, test p-values and correlations](docs/images/randomness_report.png)
 
 - **Bit images:** every bit as a pixel (black = 1). Random bits look like TV static; a bias shows
   as more black, and a pattern shows as stripes or bands.
@@ -96,10 +99,10 @@ errors it lies above 2.
 This is a demonstration, not a certificate of randomness: a rigorous Bell test also needs the two
 sides far apart and other loopholes closed, which a single chip or a simulator can't provide.
 
-![Bell test: correlations per setting pair and S against the classical limit](docs/bell_test.png)
+![Bell test: correlations per setting pair and S against the classical limit](docs/images/bell_test.png)
 
-*A 512-shot run on Qiskit's built-in simulator: S = 2.99 ± 0.12, 8 standard errors above the
-classical limit. A value above 2.83 is sampling noise; more shots narrow the error.*
+*A 512-shot run on Qiskit's built-in simulator: S = 2.85 ± 0.12, about 7 standard errors above
+the classical limit. A value above 2.83 is sampling noise; more shots narrow the error.*
 
 ### Run settings
 
@@ -175,7 +178,9 @@ qrand/       library: generator (entropy pool, debiasing) and stats (health test
              random walk, dice, chi-square)
 main.py      Qollab demo: console sections and chart
 tests/       pytest tests
-docs/        usage guide, project page, demo script, device results, example chart
+docs/        usage guide, project page and card, demo script, device results
+docs/images/ pictures for the README and Project Card
+scripts/     make_figures.py regenerates docs/images/
 notebooks/   tutorial notebook (qrand_tutorial.ipynb)
 ```
 
