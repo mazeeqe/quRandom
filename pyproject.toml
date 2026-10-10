@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qurandom"
+version = "0.1.0"
+description = "Quantum random number generation - Qollab Hackathon submission"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+quantum = ["qiskit>=1.0"]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[project.scripts]
+qurandom = "qurandom.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
