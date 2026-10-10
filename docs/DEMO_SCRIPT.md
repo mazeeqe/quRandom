@@ -68,6 +68,11 @@ it back."
 one time in six, and the chi-square test confirms that these dice are consistent with fair
 ones."
 
+**Show (if time allows):** the randomness report chart.
+
+**Say:** "Every run also gets a randomness report: each bit as a pixel, which should look like
+static, plus the test results and a check for patterns between bits."
+
 ### 6. Honest close (2:15–2:30)
 
 **Show:** the "Honest notes" section of the project page, then the license.

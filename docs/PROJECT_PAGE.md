@@ -57,6 +57,20 @@ roll, 6 and 7 rejected) and compares how often each face comes up with a fair
 16.7%, using a chi-square test. The dice show that the numbers work; the walk
 is what shows the bias, because a small bias barely changes dice counts.
 
+## Measuring each run
+
+Every run gets a **randomness score** for its raw and its debiased bits:
+
+- **Tests passed:** how many of the five NIST SP 800-22 tests pass (`p >= 0.01`).
+- **Min-entropy per bit:** how many truly random bits each measured bit is worth, using the NIST
+  SP 800-90B most-common-value estimate at 99% confidence. It is shown next to the best score
+  possible for that many bits, because the confidence bound keeps even perfect bits below 1.
+- **Patterns between bits:** the correlation between each bit and the bit 1 to 16 places later.
+  Fair bits stay within `±3/√n`.
+
+The randomness report chart draws all of it, including every bit as a pixel, so a bias or a
+pattern is visible at a glance.
+
 ## Built for Qollab's one-job-per-run IonQ rule
 
 IonQ backends accept one job per run, so qrand runs **a single circuit job**
@@ -74,15 +88,20 @@ or **Qubits**.
 4. Read the console:
    1. the circuit
    2. a measured bitstring converted to a number
-   3. P(1) for each qubit and a pass/fail table of the five health tests,
-      raw vs debiased
+   3. how random the run is: P(1) for each qubit, a pass/fail table of the
+      five health tests, and a randomness score (tests passed, min-entropy per
+      bit, patterns between bits), raw vs debiased
    4. the random walk: where the raw and debiased walks end, and whether that
       is inside the range of fair walks
    5. dice from raw vs debiased bits, with the chi-square fairness test
    6. using the numbers: dice rolls, a float and a shuffle
    7. a result line you can collect across backends to compare devices
-5. Look at the chart: per-qubit bias, dice raw vs debiased, and the two random
-   walks inside the band where fair walks stay.
+5. Look at the two charts:
+   - per-qubit bias, dice raw vs debiased, and the two random walks inside the
+     band where fair walks stay
+   - the **randomness report**: every bit drawn as a pixel (random bits look
+     like TV static), the p-value of each test, and the correlation between
+     each bit and the next 16 bits
 
 Tip: try an IonQ noise-model simulator to see real noise. More **Shots** make
 a bias easier to see in the walk. The walk and the dice comparison only read

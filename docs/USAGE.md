@@ -136,6 +136,8 @@ Each of `raw` and `debiased` contains:
 | `runs_p` | runs test p-value (are flips between 0 and 1 as frequent as chance predicts?) | `>= 0.01` passes |
 | `longest_run_p` | longest run of 1s per block, compared with chance (needs 128+ bits, else `nan`) | `>= 0.01` passes |
 | `serial_p` | serial test: are all overlapping 3-bit patterns equally common? (lower of its two p-values) | `>= 0.01` passes |
+| `min_entropy` | min-entropy per bit: how many truly random bits each bit is worth (NIST SP 800-90B most-common-value estimate, 99% confidence) | as close as possible to `ideal_min_entropy_per_bit(bits)` |
+| `max_autocorr` | largest correlation between a bit and the bit 1–16 places later | `<= autocorr_limit(bits)` |
 | `nibble_entropy` | Shannon entropy of 4-bit blocks | 4.0 |
 
 `report()` needs at least 100 bits in both the raw and the debiased pool, so use a job of at
@@ -145,6 +147,15 @@ The same tests are available on their own in `qrand.stats`:
 `ones_fraction`, `monobit_p`, `block_frequency_p(bits, block=32)`, `runs_p`, `longest_run_p`,
 `serial_p(bits, m=3)` (returns both p-values), `nibble_entropy`, `per_qubit_p1`, `health_report`
 and `igamc` (the incomplete gamma function the tests use).
+
+Measures of how random a run is:
+
+| Function | Returns |
+| --- | --- |
+| `min_entropy_per_bit(bits)` | min-entropy per bit, between 0 (always the same value) and just under 1 |
+| `ideal_min_entropy_per_bit(n)` | the best `min_entropy_per_bit` can give for `n` perfectly balanced bits; the 99% confidence bound keeps it below 1 (0.943 for 4096 bits, 0.920 for 2048) |
+| `autocorrelation(bits, max_lag=16)` | correlation between each bit and the bit `k` places later, for `k = 1 … max_lag`; `+1` means bits repeat, `-1` means they alternate |
+| `autocorr_limit(n)` | fair range `3/√n`; fair bits keep all 16 lags inside it about 96% of the time |
 
 The five p-value tests follow NIST SP 800-22 and reproduce the worked examples in that document
 (checked in `tests/test_qrand.py`). With 10 checks per run (5 tests × raw and debiased), a single
@@ -198,7 +209,7 @@ per run, which is what qrand sends.
 | Shots | 512 | more shots, more numbers |
 | Qubits | 8 | must be even with `xor` |
 | Debias | `xor` | `xor`, `von_neumann` or `none` |
-| Plot | on | draws the per-qubit bias, the raw vs debiased dice and the random walks |
+| Plot | on | draws two charts: per-qubit bias, dice and random walks; then the randomness report (bit images, test p-values, correlations) |
 
 The demo draws 16 bits, up to 120 die rolls, one float and a 6-letter shuffle (about 600 bits in
 total), so the defaults leave plenty to spare. The random walk and the raw vs debiased dice

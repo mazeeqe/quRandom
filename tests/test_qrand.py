@@ -146,3 +146,17 @@ def test_serial_and_longest_run_catch_patterns():
     assert stats.longest_run_p(pattern) < 0.01
     with pytest.raises(ValueError):
         stats.serial_p("01" * 10)
+
+
+def test_min_entropy_and_autocorrelation():
+    assert stats.min_entropy_per_bit("1" * 100) == 0.0
+    rng = random.Random(3)
+    fair = "".join(rng.choice("01") for _ in range(4096))
+    biased = "".join("1" if rng.random() < 0.6 else "0" for _ in range(4096))
+    ideal = stats.ideal_min_entropy_per_bit(4096)
+    assert 0.85 < stats.min_entropy_per_bit(fair) <= ideal < 1
+    assert stats.min_entropy_per_bit(biased) < 0.75  # -log2(0.6) = 0.737
+    assert stats.autocorrelation("01" * 50, 2) == [-1.0, 1.0]
+    assert max(map(abs, stats.autocorrelation(fair))) <= stats.autocorr_limit(len(fair))
+    report = QuantumRandom(shots=256).report()["raw"]
+    assert {"min_entropy", "max_autocorr"} <= report.keys()

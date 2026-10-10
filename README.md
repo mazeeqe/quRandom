@@ -36,8 +36,10 @@ One run sends a single circuit job and prints six sections:
 
 1. **The circuit:** a Hadamard gate on every qubit, then a measurement.
 2. **Bitstring → number:** 16 measured bits turned into an integer.
-3. **Is each qubit a fair coin?** P(1) per qubit and a table of five NIST SP 800-22 health tests
-   (frequency, block frequency, runs, longest run, serial), raw vs debiased.
+3. **How random is this run?** P(1) per qubit, a table of five NIST SP 800-22 health tests
+   (frequency, block frequency, runs, longest run, serial), and a **randomness score** for raw
+   and debiased bits: tests passed, min-entropy per bit, and whether any pattern links a bit to
+   the next 16 bits.
 4. **Random walk:** every bit is a step, `1` up and `0` down. A fair walk of `n` steps ends
    within `±2√n` about 95% of the time; a bias toward `1` makes it drift out of that range. The
    demo compares the raw walk with the debiased one.
@@ -52,6 +54,20 @@ With **Plot** on it also draws this chart:
 *This example comes from a test backend with a simulated 3% bias toward `1`: the raw walk
 (orange) ends at +172, outside the ±128 band, while the debiased walk (blue) stays inside. On an
 unbiased simulator both walks stay inside the band.*
+
+A second chart, the **randomness report**, shows each run at a glance:
+
+![Randomness report: bit images, test p-values and correlations](docs/randomness_report.png)
+
+- **Bit images:** every bit as a pixel (black = 1). Random bits look like TV static; a bias shows
+  as more black, and a pattern shows as stripes or bands.
+- **Health tests:** the p-value of each test, raw vs debiased, with the 0.01 pass line.
+- **Patterns:** the correlation between each bit and the bit 1 to 16 places later. Fair bits stay
+  inside the dashed range of `±3/√n`.
+- **Min-entropy** in the title: how many truly random bits each bit is worth (NIST SP 800-90B
+  estimate at 99% confidence), next to the best score possible for that many bits.
+
+*This example is a run on Qiskit's built-in simulator.*
 
 The walk and dice comparison only read the bits the job already produced; they don't use up the
 pool or send extra jobs.

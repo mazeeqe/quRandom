@@ -130,6 +130,45 @@ def serial_p(bits: str, m: int = 3) -> tuple[float, float]:
     return igamc(2 ** (m - 2), d1 / 2), igamc(2 ** (m - 3), d2 / 2)
 
 
+def min_entropy_per_bit(bits: str) -> float:
+    """Min-entropy per bit, using the NIST SP 800-90B "most common value" estimate.
+
+    Takes the share of the more common bit value, raises it to its 99% upper confidence bound,
+    and returns -log2 of that. 1.0 would be perfect, but the confidence bound keeps even perfect
+    bits slightly below 1 for a finite sample (see `ideal_min_entropy_per_bit`).
+    """
+    n = len(bits)
+    if n < 2:
+        return float("nan")
+    p_hat = max(bits.count("1"), bits.count("0")) / n
+    p_upper = min(1.0, p_hat + 2.576 * math.sqrt(p_hat * (1 - p_hat) / (n - 1)))
+    return abs(math.log2(p_upper))  # log2 <= 0 here; abs also avoids printing -0.0
+
+
+def ideal_min_entropy_per_bit(n: int) -> float:
+    """What `min_entropy_per_bit` gives for perfectly balanced bits of length n (the best score)."""
+    return -math.log2(min(1.0, 0.5 + 2.576 * math.sqrt(0.25 / (n - 1))))
+
+
+def autocorrelation(bits: str, max_lag: int = 16) -> list[float]:
+    """Correlation between each bit and the bit `lag` places later, for lag = 1..max_lag.
+
+    Bits are mapped to +1/-1, so fair bits give values near 0, +1 means bits repeat and -1 means
+    they alternate. For fair bits, all 16 lags stay within +/-3/sqrt(n) about 96% of the time
+    (see `autocorr_limit`).
+    """
+    x = [1 if b == "1" else -1 for b in bits]
+    n = len(x)
+    return [sum(x[i] * x[i + k] for i in range(n - k)) / (n - k) for k in range(1, max_lag + 1)
+            if k < n]
+
+
+
+def autocorr_limit(n: int) -> float:
+    """Fair range for `autocorrelation`: +/-3/sqrt(n)."""
+    return 3 / math.sqrt(n)
+
+
 def health_report(bits: str) -> dict[str, float]:
     if len(bits) < 100:
         raise ValueError("need at least 100 bits for a meaningful report")
@@ -142,6 +181,8 @@ def health_report(bits: str) -> dict[str, float]:
         "longest_run_p": longest_run_p(bits),
         "serial_p": min(serial_p(bits)),
         "nibble_entropy": nibble_entropy(bits),
+        "min_entropy": min_entropy_per_bit(bits),
+        "max_autocorr": max(abs(r) for r in autocorrelation(bits)),
     }
 
 
