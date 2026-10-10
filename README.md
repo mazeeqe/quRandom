@@ -1,39 +1,42 @@
 # quRandom
 
-Quantum random number generation. Submission for the Qollab Hackathon.
+**qrand**: noise-aware random numbers from a quantum circuit. Submission for the Qollab Hackathon.
 
-## How it works
+Every qubit gets a Hadamard gate and is measured, so each one is a 50/50 coin flip. A single
+circuit job fills an *entropy pool*, and numbers are carved out of it. qrand measures each qubit's
+bias (noisy hardware often reads `1` a little more than `0`) and can remove it with `xor` or
+`von_neumann` debiasing.
 
-Each qubit goes through a Hadamard gate, which puts it in an equal superposition of `|0⟩` and `|1⟩`.
-Measuring it gives `0` or `1` with probability ½ each. quRandom builds bits, integers and floats from
-those measurements.
-
-> On a simulator the output is only pseudo-random. Run it on real quantum hardware for true randomness.
+See [docs/PROJECT_PAGE.md](docs/PROJECT_PAGE.md) for the full write-up and
+[docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) for the demo video plan.
 
 ## Getting started
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[quantum,dev]"
+pip install -e ".[plot,dev]"
 ```
 
 ## Usage
 
+On Qollab, open the project and press **Run**. `main.py` uses the `backend` Qollab provides.
+
+Locally, run the demo on Qiskit's built-in simulator:
+
 ```bash
-qurandom              # random float in [0, 1)
-qurandom --bits 16    # 16 random bits
-qurandom --int 1 6    # roll a die
-qurandom --classical  # skip Qiskit and use the OS random source
+python -c "import main; main.main()"
 ```
 
-```python
-from qurandom import QuantumRandom
+In your own code:
 
-qr = QuantumRandom(num_qubits=8)
-qr.bits(16)
+```python
+from qrand import QuantumRandom
+
+qr = QuantumRandom(backend, n_qubits=8, shots=512, debias="xor")  # backend=None uses a local simulator
 qr.randint(1, 6)
 qr.random()
+qr.report()  # per-qubit bias and NIST-style health tests
 ```
 
 ## Tests
@@ -45,10 +48,11 @@ pytest
 ## Project layout
 
 ```
-src/qurandom/   package source (generator, CLI)
-tests/          pytest tests
-notebooks/      experiments and demos
-docs/           docs and presentation material
+qrand/       library: generator (entropy pool, debiasing) and stats (health tests)
+main.py      Qollab demo entry point
+tests/       pytest tests
+docs/        project page and demo script
+notebooks/   experiments
 ```
 
 ## Team

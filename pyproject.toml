@@ -3,26 +3,24 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "qurandom"
-version = "0.1.0"
-description = "Quantum random number generation - Qollab Hackathon submission"
+name = "qrand"
+version = "0.2.0"
+description = "Noise-aware quantum random numbers - Qollab Hackathon submission"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = ["qiskit>=1.0"]
 
 [project.optional-dependencies]
-quantum = ["qiskit>=1.0"]
+plot = ["matplotlib"]
 dev = ["pytest>=8", "ruff>=0.5"]
 
-[project.scripts]
-qurandom = "qurandom.cli:main"
-
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.setuptools]
+packages = ["qrand"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 
 [tool.ruff]
 line-length = 100
