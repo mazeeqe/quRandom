@@ -17,6 +17,8 @@ bits "1001011011100011"  ->  int(bits, 2)  ->  38627
 - `randint(a, b)`: unbiased integers, using rejection sampling (no modulo bias)
 - `random()`, `choice()`, `shuffle()`: floats, picks and shuffles
 - `report()`: per-qubit bias and NIST-style health tests (monobit, runs, entropy)
+- `stats.random_walk()`, `stats.dice_from_bits()`, `stats.chi2_uniform_p()`: the tools
+  behind the demo charts
 
 Full usage guide, with ranges and how many numbers each job gives:
 [docs/USAGE.md](https://github.com/mazeeqe/quRandom/blob/main/docs/USAGE.md)
@@ -34,6 +36,26 @@ it, and can remove it with two debiasing modes:
 
 The health report compares raw and debiased bits so you can see the effect.
 
+## Seeing the bias: a quantum random walk
+
+A bias of a few percent is hard to spot in a list of numbers. qrand makes it
+visible by turning the bits into a **random walk**: every bit is one step,
+`1` goes up and `0` goes down.
+
+- A fair walk wanders around zero. After `n` steps it ends within `±2√n` about
+  95% of the time. The demo draws this range as a grey band.
+- A biased walk drifts. With P(1) = p, it moves about `(2p − 1) × n` steps
+  away, and this drift grows faster than the band. A 3% bias over 4096 steps
+  ends around +170, well outside the band of ±128.
+
+The demo draws the raw walk (orange) and the debiased walk (blue) from the
+same job, so you can see debiasing remove the drift.
+
+It also rolls **dice from the raw and from the debiased bits** (3 bits per
+roll, 6 and 7 rejected) and compares how often each face comes up with a fair
+16.7%, using a chi-square test. The dice show that the numbers work; the walk
+is what shows the bias, because a small bias barely changes dice counts.
+
 ## Built for Qollab's one-job-per-run IonQ rule
 
 IonQ backends accept one job per run, so qrand runs **a single circuit job**
@@ -47,9 +69,21 @@ or **Qubits**.
 2. In **Select QPU**, choose the built-in simulator or an **IonQ remote
    simulator** (for example *IonQ Forte 1*). All are free.
 3. Under **Run settings** set **Shots** (default 512), **Qubits** (8, even
-   number) and **Debias** (`xor`, `von_neumann` or `none`).
-4. Read the console: the circuit, a bitstring converted to a number, per-qubit
-   bias, health tests, dice rolls, and a chart.
+   number), **Debias** (`xor`, `von_neumann` or `none`) and **Plot** (on).
+4. Read the console:
+   1. the circuit
+   2. a measured bitstring converted to a number
+   3. P(1) for each qubit and the health tests, raw vs debiased
+   4. the random walk: where the raw and debiased walks end, and whether that
+      is inside the range of fair walks
+   5. dice from raw vs debiased bits, with the chi-square fairness test
+   6. using the numbers: dice rolls, a float and a shuffle
+5. Look at the chart: per-qubit bias, dice raw vs debiased, and the two random
+   walks inside the band where fair walks stay.
+
+Tip: try an IonQ noise-model simulator to see real noise. More **Shots** make
+a bias easier to see in the walk. The walk and the dice comparison only read
+the job's bits, so it is still a single job.
 
 Use it in your own code:
 
@@ -81,4 +115,4 @@ Source: https://github.com/mazeeqe/quRandom
 
 License: MIT.
 
-**Tags:** `qiskit`, `ionq`, `random-numbers`, `hadamard`, `noise`, `hackathon`
+**Tags:** `qiskit`, `ionq`, `random-numbers`, `hadamard`, `noise`, `random-walk`, `hackathon`
