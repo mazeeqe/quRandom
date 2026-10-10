@@ -73,3 +73,6 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
             plt.show()
         except ImportError:
             pass
+
+
+main()

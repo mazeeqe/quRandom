@@ -25,7 +25,7 @@ On Qollab, open the project and press **Run**. `main.py` uses the `backend` Qoll
 Locally, run the demo on Qiskit's built-in simulator:
 
 ```bash
-python -c "import main; main.main()"
+python main.py
 ```
 
 In your own code:
