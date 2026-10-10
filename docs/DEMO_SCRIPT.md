@@ -29,8 +29,8 @@ the quantum hardware is actually a fair coin."
 
 ### 2. The idea (0:15–0:45)
 
-**Show:** press **Run**, choose the **built-in simulator**, press Run. Scroll to section 1, the
-circuit.
+**Show:** press **Run**, choose the **built-in simulator**, press Run. Show the overview at the
+top of the console, then step 1.
 
 **Say:** "Every qubit gets a Hadamard gate, which puts it halfway between zero and one. When we
 measure it, it collapses to zero or one, fifty-fifty. Eight qubits give eight random bits per
@@ -38,8 +38,7 @@ shot, and 512 shots fill a pool of bits in a single job."
 
 ### 3. Bits become numbers (0:45–1:05)
 
-**Show:** section 2 (bitstring → number), then section 6 (dice rolls, float, shuffle) and the
-dice chart.
+**Show:** step 3 (bitstring → number, dice rolls, decimal, shuffle) and the dice chart.
 
 **Say:** "The measured bits form a binary string, and that string becomes a number. From the
 pool we draw dice rolls, decimals and shuffles. Rejection sampling keeps every result equally
@@ -47,8 +46,8 @@ likely, and the dice chart shows each face coming up about one time in six."
 
 ### 4. Noise and the random walk (1:05–1:50)
 
-**Show:** run again on the **IonQ noise-model simulator**. Point at the per-qubit bars in
-section 3, then at the random-walk chart.
+**Show:** run again on the **IonQ noise-model simulator**. Point at the per-qubit bars and
+the ✔/✘ checks in step 2, then at the random-walk chart.
 
 **Say (both versions):** "Real devices are noisy, so a qubit can lean slightly toward one. A
 lean of a few percent is hard to see in a list of numbers, so we turn the bits into a random
@@ -63,7 +62,7 @@ it back."
 
 ### 5. Is it really quantum? (1:50–2:15)
 
-**Show:** section 7 and the Bell test chart, from either run.
+**Show:** step 4 (the S scale) and the Bell test chart, from either run.
 
 **Say:** "But could a classical program fake all this? Each run also includes a Bell test: two
 entangled qubits, measured in directions picked by quantum coin flips. No classical source can

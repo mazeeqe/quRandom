@@ -93,10 +93,9 @@ the two sides far apart, which one chip or a simulator can't provide.*
    *IonQ Forte 1*. All simulators are free.
 3. Under **Run settings** keep the defaults or change them: **Shots** 512, **Qubits** 8 (even),
    **Debias** `xor` / `von_neumann` / `none`, **Plot** on, **Bell** on.
-4. Read the console, in order: the circuit; a bitstring turned into a number; how random the run
-   is (per-qubit bias, health tests, randomness score); the random walk; dice from raw vs
-   debiased bits; dice rolls, a float and a shuffle; the Bell test; and a result line for
-   comparing devices.
+4. Read the console. It is written for newcomers: an overview, then four steps in plain words
+   (flip quantum coins, check the coins, make numbers, prove it's quantum) with ✔ / ✘ for
+   every check, a short summary, and technical details at the end for experts.
 5. Look at the three charts shown above.
 
 Tip: an IonQ noise-model simulator shows real noise. More **Shots** make a bias easier to see in

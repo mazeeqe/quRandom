@@ -35,22 +35,23 @@ python main.py
 
 ### What the demo shows
 
-One run sends a single circuit job and prints six sections:
+One run sends a single circuit job. The console is written for newcomers: it opens with a
+four-step overview, explains each step in plain words, and marks every check with ✔ or ✘.
 
-1. **The circuit:** a Hadamard gate on every qubit, then a measurement.
-2. **Bitstring → number:** 16 measured bits turned into an integer.
-3. **How random is this run?** P(1) per qubit, a table of five NIST SP 800-22 health tests
-   (frequency, block frequency, runs, longest run, serial), and a **randomness score** for raw
-   and debiased bits: tests passed, min-entropy per bit, and whether any pattern links a bit to
-   the next 16 bits.
-4. **Random walk:** every bit is a step, `1` up and `0` down. A fair walk of `n` steps ends
-   within `±2√n` about 95% of the time; a bias toward `1` makes it drift out of that range. The
-   demo compares the raw walk with the debiased one.
-5. **Dice, raw vs debiased:** dice rolled from both sets of bits, the share of each face, and a
-   chi-square fairness test.
-6. **Using the numbers:** dice rolls, a float in `[0, 1)` and a shuffle.
-7. **Is it really quantum? A Bell test (CHSH):** the correlations of an entangled pair and the
-   Bell score S, against the classical limit of 2.
+1. **Flip quantum coins:** a Hadamard gate and a measurement turn each qubit into a fair coin.
+2. **Check the coins:** how often each qubit gave 1, six yes/no checks (five NIST SP 800-22
+   tests plus a hidden-pattern check), an unpredictability score (NIST SP 800-90B min-entropy
+   as a share of the best possible) and a **random walk**: every bit is a step, `1` up and `0`
+   down. A fair walk of `n` steps ends within `±2√n` about 95% of the time; a bias toward `1`
+   makes it drift out. Raw bits are compared with cleaned (debiased) bits throughout.
+3. **Make numbers:** 16 bits turned into an integer, dice rolls, a float in `[0, 1)`, a shuffle,
+   and a table of dice faces from raw vs cleaned bits.
+4. **Prove it's quantum (Bell test, CHSH):** the Bell score S on a text scale, against the
+   classical limit of 2 and the quantum prediction of 2.83.
+
+Then a **summary** of ✔ / ! lines and a **technical details** section for experts: the full
+circuit, p-values, min-entropy, autocorrelation, chi-square, the four CHSH correlations and a
+result line for [docs/DEVICE_RESULTS.md](docs/DEVICE_RESULTS.md).
 
 With **Plot** on it also draws this chart:
 

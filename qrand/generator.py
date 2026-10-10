@@ -93,9 +93,10 @@ class QuantumRandom:
             # which makes the bit order anything but random. Restore a random order.
             random.SystemRandom().shuffle(shots)
             self.warnings.append(
-                "Backend returned counts without per-shot memory, so shot order was "
-                "restored with the OS random generator. Use a noise-model simulator "
-                "for per-shot quantum results.")
+                "This backend reported only how often each result came up, not the order "
+                "of the shots, so the order was shuffled with the computer's own random "
+                "generator. For shot-by-shot quantum results, pick an IonQ noise-model "
+                "simulator such as IonQ Forte 1.")
         if self.bell_test:
             # Qiskit strings are MSB-left, so the Bell clbits (highest indices) come first.
             k = bell.BELL_QUBITS
