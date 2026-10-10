@@ -1,5 +1,6 @@
 **quRandom** turns measured qubits into random numbers, checks how fair the quantum coins really
-are, removes bias, and runs a Bell test to show the randomness comes from quantum physics. All of
+are, removes bias, and shows two of the hardest quantum ideas happening live: **superposition**,
+by un-flipping a quantum coin, and **entanglement**, with a Bell test. All of
 it runs in **one circuit and one job**, so it works within IonQ's one-job-per-run limit on Qollab.
 
 ![How quRandom works: one circuit, one job, check and debias, numbers, plus a Bell test](https://raw.githubusercontent.com/mazeeqe/quRandom/main/docs/images/how_it_works.png)
@@ -17,8 +18,13 @@ The measured bits fill an *entropy pool*, and numbers are carved out of it:
 bits "1001011011100011"  ->  int(bits, 2)  ->  38627
 ```
 
-The circuit below has 4 random-number qubits (q0–q3) and the 4 Bell-test qubits (q4–q7). The demo
-uses 8 random-number qubits by default.
+The circuit below has 4 random-number qubits (q0–q3), the 4 Bell-test qubits (q4–q7) and the
+un-flip qubit (q8). The demo uses 8 random-number qubits by default. **Only q0–q3 make the
+random numbers.** The Bell-test and un-flip qubits are there to check the randomness: they show
+that it comes from quantum effects (entanglement and superposition). Their bits never become
+numbers. They are kept separate from number generation: the library leaves them out unless
+asked (`check_hardware()` runs them as a test of their own), and on real hardware the demo skips
+them unless **Hardware checks** is on.
 
 ![The circuit: Hadamard and measure on the random-number qubits, then the Bell test on four more](https://raw.githubusercontent.com/mazeeqe/quRandom/main/docs/images/circuit.png)
 
@@ -26,10 +32,27 @@ uses 8 random-number qubits by default.
 
 - `bitstring(n)`, `getrandbits(k)`, `randint(a, b)`, `random()`, `choice()`, `shuffle()`.
   Integers use rejection sampling, so there is no modulo bias.
-- `report()`: per-qubit bias, five NIST SP 800-22 health tests, min-entropy and the Bell test.
+- `report()`: per-qubit bias, five NIST SP 800-22 health tests, min-entropy, the Bell test and
+  the un-flip test.
 - Full guide with ranges and how many numbers each job gives:
   [docs/USAGE.md](https://github.com/mazeeqe/quRandom/blob/main/docs/USAGE.md). Step-by-step
   tutorial: [notebooks/qrand_tutorial.ipynb](https://github.com/mazeeqe/quRandom/blob/main/notebooks/qrand_tutorial.ipynb).
+
+## Superposition is not "secretly 0 or 1": un-flipping a quantum coin
+
+A common picture of superposition is a coin that is already heads or tails, and we just haven't
+looked. If that were true, a second Hadamard would act like flipping the coin again, and the
+result would still be 50/50. One extra qubit in the same circuit tests it:
+
+$$|0\rangle \xrightarrow{H} \tfrac{1}{\sqrt2}(|0\rangle+|1\rangle) \xrightarrow{H} |0\rangle \quad\text{(the two paths to } |1\rangle \text{ cancel)}$$
+
+![Un-flipping a quantum coin: one H gives 50% zeros, H then H gives 100% zeros](https://raw.githubusercontent.com/mazeeqe/quRandom/main/docs/images/unflip.png)
+
+*On the built-in simulator the un-flipped qubit reads 0 in every shot. On a noisy device a few 1s
+slip in: noise disturbs the qubit while it is in superposition and washes out part of the
+interference (decoherence). The share of 0s still lands far above the 50% of a classical coin.
+A barrier keeps Qiskit from cancelling the two gates; a cloud compiler could still merge them,
+and then the 1s would come only from readout errors.*
 
 ## Noise-aware: seeing and removing bias
 
@@ -92,11 +115,12 @@ the two sides far apart, which one chip or a simulator can't provide.*
 2. In **Select QPU**, choose the built-in simulator or an **IonQ remote simulator** such as
    *IonQ Forte 1*. All simulators are free.
 3. Under **Run settings** keep the defaults or change them: **Shots** 512, **Qubits** 8 (even),
-   **Debias** `xor` / `von_neumann` / `none`, **Plot** on, **Bell** on.
+   **Debias** `xor` / `von_neumann` / `none`, **Plot** on, **Bell** on, **Unflip** on,
+   **Hardware checks** off (only matters on real hardware).
 4. Read the console. It is written for newcomers: an overview, then four steps in plain words
-   (flip quantum coins, check the coins, make numbers, prove it's quantum) with ✔ / ✘ for
-   every check, a short summary, and technical details at the end for experts.
-5. Look at the three charts shown above.
+   (flip quantum coins and un-flip one, check the coins, make numbers, prove it's quantum) with
+   ✔ / ✘ for every check, a short summary, and technical details at the end for experts.
+5. Look at the four charts shown above.
 
 Tip: an IonQ noise-model simulator shows real noise. More **Shots** make a bias easier to see in
 the walk and narrow the error on S. Everything still runs as a single job.
@@ -105,9 +129,14 @@ In your own code:
 
 ```python
 from qrand import QuantumRandom
-qr = QuantumRandom(backend, n_qubits=8, shots=512, debias="xor", bell_test=True)
+from qrand import QuantumRandom, check_hardware
+
+# Is this device a good source of randomness? A test job with every check included:
+check_hardware(backend)["summary"]   # fair qubits, tests passed, Bell, un-flip, all_passed
+
+# Numbers only: just the random-number qubits, no check qubits (the default)
+qr = QuantumRandom(backend, n_qubits=8, shots=512, debias="xor")
 qr.randint(1, 6)
-qr.report()["bell"]["S"]
 ```
 
 ## Real quantum hardware
@@ -115,7 +144,9 @@ qr.report()["bell"]["S"]
 The same code runs on IonQ's trapped-ion computers (**IonQ Forte 1**, **IonQ Forte Enterprise 1**
 under *Quantum computer*) with Qollab credits. No login or API key is needed: Qollab provides the
 backend. Try the matching free remote simulator first, keep shots low, and approve the credit
-estimate. The console then labels the backend `(real quantum hardware)`. Hardware isn't required
+estimate. On hardware the demo runs only the random-number qubits by default, with no
+two-qubit gates, to save credits; the numbers and health tests stay the same. To test the device
+itself, turn on **Hardware checks**, ideally in a separate run. The console then labels the backend `(real quantum hardware)`. Hardware isn't required
 or scored, and **this path is not yet tested on a real device**: we had no credits during the
 hackathon.
 
@@ -130,8 +161,8 @@ hackathon.
 
 ## Built during the hackathon
 
-Everything here (library, bias analysis, debiasing, health tests, Bell test, demo, docs and
-pictures) was built during the Qollab Hackathon window (Oct 9–11, 2026). No pre-existing project
+Everything here (library, bias analysis, debiasing, health tests, Bell test, un-flip test, demo,
+docs and pictures) was built during the Qollab Hackathon window (Oct 9–11, 2026). No pre-existing project
 code was reused. The code was written with the help of AI tools (Claude). It builds on Qiskit;
 the health tests follow NIST SP 800-22 and the min-entropy estimate follows NIST SP 800-90B.
 

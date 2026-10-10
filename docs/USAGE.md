@@ -32,6 +32,7 @@ QuantumRandom(backend=None, n_qubits=8, shots=512, debias="xor", auto_refill=Fal
 | `debias` | `"xor"` | `"none"`, `"xor"`, `"von_neumann"` | How to remove measurement bias (see below). |
 | `auto_refill` | `False` | `True` / `False` | Run another job when the pool runs out. **Keep `False` on IonQ**, which allows one job per run. |
 | `bell_test` | `False` | `True` / `False` | Add a CHSH Bell test on 4 extra qubits in the same circuit and job. Its bits never enter the pool. |
+| `unflip_test` | `False` | `True` / `False` | Add the un-flip test: 1 extra qubit with H, H, measure. Its bits never enter the pool. |
 
 Invalid values raise `ValueError`.
 
@@ -124,6 +125,7 @@ simulators: IonQ backends on Qollab accept one job per run.
 | `hardware` | `True` on a real quantum computer, `False` on any simulator |
 | `per_qubit_p1` | list with P(measure 1) for each qubit; a fair qubit is near 0.5 |
 | `raw`, `debiased` | health tests for the raw and the debiased bits (below) |
+| `bell`, `unflip` | Bell test and un-flip test results, or `None` when off (see below) |
 | `warnings` | list of warnings, for example when a backend returned counts only |
 
 Each of `raw` and `debiased` contains:
@@ -197,6 +199,35 @@ The `qrand.bell` module has the pieces: `add_chsh(circuit, qubits, clbits)` appe
 any circuit, `chsh_from_shots(shots)` computes the result from 4-character shot strings, and
 `expected_correlation(a, b)` gives the quantum prediction for each setting pair.
 
+## Un-flip test
+
+With `unflip_test=True`, one more qubit gets H, a barrier, H again, and a measurement. The two
+paths to 1 cancel, so an ideal device reads 0 every time; a classical coin flipped twice would
+read 0 half the time. Noise (decoherence) lets a few 1s through. The result is in
+`qr.unflip_result` and `qr.report()["unflip"]` (`None` when the test is off):
+`{"shots": 512, "zeros": 512, "p0": 1.0}`.
+
+## Testing a device: `check_hardware()`
+
+Number generation and device testing are kept apart. `QuantumRandom` uses only the
+random-number qubits unless you ask for the checks, so everyday use costs the least.
+`check_hardware()` runs one test job with every check included and adds a pass/fail summary:
+
+```python
+from qrand import check_hardware
+
+rep = check_hardware(backend, n_qubits=8, shots=512)   # one job
+rep["summary"]
+# {'fair_qubits': True,                 every qubit within 3 standard errors of 0.5
+#  'health_tests_passed': {'raw': 6, 'debiased': 6},   five NIST tests + pattern check
+#  'bell_quantum': True,                Bell S above 2
+#  'unflip_interference': True,         un-flip P(0) clearly above 0.5
+#  'all_passed': True}           all of the above, allowing one chance test failure
+```
+
+The rest of `rep` is the usual `report()`, including `bell` and `unflip`. On IonQ via Qollab
+each run allows one job, so test a device in one run and generate numbers in another.
+
 ## Simulator or real hardware?
 
 `is_hardware(backend)` returns `True` for a real quantum computer and `False` for any simulator:
@@ -233,8 +264,10 @@ per run, which is what qrand sends.
 | Shots | 512 | more shots, more numbers |
 | Qubits | 8 | must be even with `xor` |
 | Debias | `xor` | `xor`, `von_neumann` or `none` |
-| Plot | on | draws three charts: per-qubit bias, dice and random walks; the randomness report (bit images, test p-values, correlations); the Bell test |
+| Plot | on | draws four charts: per-qubit bias, dice and random walks; the randomness report (bit images, test p-values, correlations); the Bell test; the un-flip test |
 | Bell | on | adds the Bell test: 4 extra qubits, so Qubits + 4 must fit the backend |
+| Unflip | on | adds the un-flip test: 1 extra qubit |
+| Hardware checks | off | on real hardware the Bell and un-flip tests are skipped to save credits; turn this on to run them there too |
 
 The demo draws 16 bits, up to 120 die rolls, one float and a 6-letter shuffle (about 600 bits in
 total), so the defaults leave plenty to spare. The random walk and the raw vs debiased dice

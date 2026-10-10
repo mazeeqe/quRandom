@@ -1,4 +1,4 @@
-# Demo video script (target 2:40)
+# Demo video script (target 2:50)
 
 The rules ask for 2 to 3 minutes showing the project working. A screen recording with voiceover
 is enough.
@@ -13,12 +13,12 @@ is enough.
    job per run, so press **Stop** and **Run** again to repeat.
 4. Use Chrome, Edge, Brave, Opera or Firefox 153+ (Safari can't run projects yet). Zoom the
    browser so the console text is readable in the recording.
-5. Settings for both runs: **Shots 512, Qubits 8, Debias xor, Plot on, Bell on**.
+5. Settings for both runs: **Shots 512, Qubits 8, Debias xor, Plot on, Bell on, Unflip on**.
 
 ## Script
 
-About 290 words of voiceover (about 2:15 at a calm pace). With clicking and pauses it comes to
-about 2:40, inside the 3-minute limit; trim scene 3 if you run long.
+About 340 words of voiceover (about 2:30 at a calm pace). With clicking and pauses it comes to
+about 2:50, inside the 3-minute limit; trim scene 3 if you run long.
 
 ### 1. Hook (0:00–0:15)
 
@@ -27,7 +27,7 @@ about 2:40, inside the 3-minute limit; trim scene 3 if you run long.
 **Say:** "This is quRandom. It makes random numbers by measuring qubits, and it checks whether
 the quantum hardware is actually a fair coin."
 
-### 2. The idea (0:15–0:45)
+### 2. The idea: superposition (0:15–0:55)
 
 **Show:** press **Run**, choose the **built-in simulator**, press Run. Show the overview at the
 top of the console, then step 1.
@@ -36,7 +36,14 @@ top of the console, then step 1.
 measure it, it collapses to zero or one, fifty-fifty. Eight qubits give eight random bits per
 shot, and 512 shots fill a pool of bits in a single job."
 
-### 3. Bits become numbers (0:45–1:05)
+**Show:** the "un-flipping a quantum coin" bars in step 1, then the un-flip chart.
+
+**Say:** "But is the qubit secretly zero or one, and we just don't know? Flip a real coin twice
+and it's still fifty-fifty. Give a qubit two Hadamards and it comes back zero every time: the two
+paths to one cancel out, like waves. That's superposition. On a noisy device a few ones slip in:
+that's decoherence washing out the interference."
+
+### 3. Bits become numbers (0:55–1:15)
 
 **Show:** step 3 (bitstring → number, dice rolls, decimal, shuffle) and the dice chart.
 
@@ -44,7 +51,7 @@ shot, and 512 shots fill a pool of bits in a single job."
 pool we draw dice rolls, decimals and shuffles. Rejection sampling keeps every result equally
 likely, and the dice chart shows each face coming up about one time in six."
 
-### 4. Noise and the random walk (1:05–1:50)
+### 4. Noise and the random walk (1:15–1:55)
 
 **Show:** run again on the **IonQ noise-model simulator**. Point at the per-qubit bars and
 the ✔/✘ checks in step 2, then at the random-walk chart.
@@ -60,7 +67,7 @@ the bias. Debiasing combines pairs of qubits, and the blue walk stays inside."
 looks fair. If it leaned toward one, the orange walk would drift out, and debiasing would bring
 it back."
 
-### 5. Is it really quantum? (1:50–2:15)
+### 5. Is it really quantum? (1:55–2:25)
 
 **Show:** step 4 (the S scale) and the Bell test chart, from either run.
 
@@ -71,7 +78,7 @@ quantum mechanics predicts."
 
 If noise pulls S below 2 on the noise-model run, show the built-in simulator run for this scene.
 
-### 6. Honest close (2:15–2:30)
+### 6. Honest close (2:25–2:40)
 
 **Show:** the "Honest notes" section of the project page, then the license.
 

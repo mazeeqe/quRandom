@@ -41,10 +41,14 @@ class QuantumRandom:
     auto_refill : run another job when the pool runs dry. Leave False on IonQ.
     bell_test : also run a CHSH Bell test on 4 extra qubits in the same circuit and job.
         Its bits never enter the pool; the result is in ``bell_result`` and ``report()``.
+    unflip_test : also "un-flip" one extra qubit: H, H, measure. Interference makes it read 0
+        every time, which a coin flipped twice can't do. Its bits never enter the pool; the
+        result is in ``unflip_result`` and ``report()``.
     """
 
     def __init__(self, backend=None, n_qubits: int = 8, shots: int = 512,
-                 debias: str = "xor", auto_refill: bool = False, bell_test: bool = False):
+                 debias: str = "xor", auto_refill: bool = False, bell_test: bool = False,
+                 unflip_test: bool = False):
         if debias not in DEBIAS_MODES:
             raise ValueError(f"debias must be one of {DEBIAS_MODES}")
         if n_qubits < 1 or shots < 2:
@@ -56,8 +60,10 @@ class QuantumRandom:
             backend = BasicSimulator()
         self.backend, self.n_qubits, self.shots = backend, n_qubits, shots
         self.debias, self.auto_refill, self.bell_test = debias, auto_refill, bell_test
+        self.unflip_test = unflip_test
         self.warnings: list[str] = []
-        self.circuit = self._build_circuit(n_qubits, bell_test)
+        self.circuit = self._build_circuit(n_qubits, bell_test, unflip_test)
+        self.unflip_result: dict | None = None
         self.bell_shots: list[str] = []
         self.bell_result: dict | None = None
         self._pool, self._pos = "", 0
@@ -67,14 +73,21 @@ class QuantumRandom:
 
     # ---------------------------------------------------------------- circuit
     @staticmethod
-    def _build_circuit(n: int, bell_test: bool = False) -> QuantumCircuit:
+    def _build_circuit(n: int, bell_test: bool = False, unflip_test: bool = False) -> QuantumCircuit:
         extra = bell.BELL_QUBITS if bell_test else 0
-        qc = QuantumCircuit(n + extra, n + extra)
+        total = n + extra + (1 if unflip_test else 0)
+        qc = QuantumCircuit(total, total)
         qc.h(range(n))                   # |0> -> (|0>+|1>)/sqrt(2)
         qc.measure(range(n), range(n))   # collapse: each qubit is a coin flip
         if bell_test:  # Bell test on the extra qubits n..n+3, same circuit, same job
             idx = list(range(n, n + extra))
             bell.add_chsh(qc, idx, idx)
+        if unflip_test:  # last qubit: H, H, measure -> the two paths to 1 cancel, always 0
+            u = total - 1
+            qc.h(u)
+            qc.barrier(u)                # keeps the transpiler from cancelling H·H
+            qc.h(u)
+            qc.measure(u, u)
         return qc
 
     # ------------------------------------------------------------------- pool
@@ -97,8 +110,12 @@ class QuantumRandom:
                 "of the shots, so the order was shuffled with the computer's own random "
                 "generator. For shot-by-shot quantum results, pick an IonQ noise-model "
                 "simulator such as IonQ Forte 1.")
+        # Qiskit strings are MSB-left, so the extra tests (highest clbits) come first.
+        if self.unflip_test:
+            zeros = sum(s[0] == "0" for s in shots)
+            self.unflip_result = {"shots": len(shots), "zeros": zeros, "p0": zeros / len(shots)}
+            shots = [s[1:] for s in shots]
         if self.bell_test:
-            # Qiskit strings are MSB-left, so the Bell clbits (highest indices) come first.
             k = bell.BELL_QUBITS
             self.bell_shots = [s[:k] for s in shots]
             self.bell_result = bell.chsh_from_shots(self.bell_shots)
@@ -198,8 +215,47 @@ class QuantumRandom:
             "debiased": stats.health_report(self._pool),
             "debias": self.debias,
             "bell": self.bell_result,
+            "unflip": self.unflip_result,
             "warnings": list(self.warnings),
         }
+
+
+def check_hardware(backend=None, n_qubits: int = 8, shots: int = 512,
+                   debias: str = "xor") -> dict:
+    """Test how random a backend's qubits are, in one job of its own.
+
+    Generating numbers with ``QuantumRandom`` uses only the random-number qubits by default.
+    This runs the same circuit once with every check added (Bell test and un-flip test) and
+    returns ``report()`` plus a ``summary`` of pass/fail results. Run it before relying on a
+    device; on IonQ via Qollab it uses the run's one job, so do it in a separate run.
+    """
+    qr = QuantumRandom(backend, n_qubits=n_qubits, shots=shots, debias=debias,
+                       bell_test=True, unflip_test=True)
+    rep = qr.report()
+    lean_limit = 3 * (0.25 / shots) ** 0.5
+    unflip = rep["unflip"]
+    rep["summary"] = {
+        "fair_qubits": all(abs(p - 0.5) <= lean_limit for p in rep["per_qubit_p1"]),
+        "health_tests_passed": {name: _tests_passed(rep[name]) for name in ("raw", "debiased")},
+        "bell_quantum": rep["bell"]["S"] > bell.CLASSICAL_LIMIT,   # False if S is nan
+        "unflip_interference":
+            (unflip["zeros"] - unflip["shots"] / 2) / (unflip["shots"] / 4) ** 0.5 > 3,
+    }
+    rep["summary"]["all_passed"] = (
+        rep["summary"]["fair_qubits"] and rep["summary"]["bell_quantum"]
+        and rep["summary"]["unflip_interference"]
+        # one failed check in six happens by chance about 5% of the time, so allow one
+        and rep["summary"]["health_tests_passed"]["debiased"] >= len(_NIST_KEYS))
+    return rep
+
+
+_NIST_KEYS = ("monobit_p", "block_frequency_p", "runs_p", "longest_run_p", "serial_p")
+
+
+def _tests_passed(r: dict) -> int:
+    """NIST tests with p >= 0.01, plus the autocorrelation check."""
+    nist = sum(1 for k in _NIST_KEYS if r[k] == r[k] and r[k] >= 0.01)   # r[k] == r[k]: not nan
+    return nist + (r["max_autocorr"] <= stats.autocorr_limit(r["bits"]))
 
 
 def is_hardware(backend) -> bool:

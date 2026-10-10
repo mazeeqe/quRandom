@@ -188,3 +188,34 @@ def test_bell_test_on_simulator_beats_classical_limit():
 def test_bell_test_with_classical_backend_stays_below_limit():
     qr = QuantumRandom(BiasedBackend(0.5), n_qubits=4, shots=2000, debias="none", bell_test=True)
     assert abs(qr.report()["bell"]["S"]) < 2
+
+
+def test_unflip_reads_zero_on_simulator():
+    qr = QuantumRandom(n_qubits=4, shots=500, debias="none", bell_test=True, unflip_test=True)
+    assert qr.circuit.num_qubits == 9
+    assert qr.report()["unflip"] == {"shots": 500, "zeros": 500, "p0": 1.0}
+    assert len(qr.raw_shots[0]) == 4 and abs(qr.report()["bell"]["S"]) > 2  # others unaffected
+
+
+def test_unflip_with_classical_backend_is_a_coin():
+    qr = QuantumRandom(BiasedBackend(0.5), n_qubits=4, shots=2000, debias="none", unflip_test=True)
+    assert abs(qr.report()["unflip"]["p0"] - 0.5) < 0.05
+
+
+def test_number_generation_has_no_check_qubits_by_default():
+    qr = QuantumRandom(n_qubits=8, shots=64)
+    assert qr.circuit.num_qubits == 8
+    assert qr.report()["bell"] is None and qr.report()["unflip"] is None
+
+
+def test_check_hardware_on_simulator_passes():
+    from qrand import check_hardware
+    rep = check_hardware(n_qubits=8, shots=2000)
+    assert rep["summary"]["bell_quantum"] and rep["summary"]["unflip_interference"]
+    assert rep["summary"]["health_tests_passed"]["raw"] >= 5
+
+
+def test_check_hardware_flags_a_classical_biased_backend():
+    from qrand import check_hardware
+    s = check_hardware(BiasedBackend(0.6), n_qubits=8, shots=2000)["summary"]
+    assert not (s["fair_qubits"] or s["bell_quantum"] or s["unflip_interference"] or s["all_passed"])

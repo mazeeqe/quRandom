@@ -18,7 +18,7 @@ area, or click **Browse**. It is what people see wherever the project is listed.
 ## About (sidebar summary)
 
 ```
-Random numbers from measured qubits, with a fairness check for every run: per-qubit bias, NIST health tests, min-entropy, a random walk that makes bias visible, debiasing, and a built-in Bell test (CHSH) showing the randomness is quantum. One circuit, one job: runs on Qollab's free simulators, including IonQ.
+Random numbers from measured qubits, with a fairness check for every run: per-qubit bias, NIST health tests, min-entropy, a random walk that makes bias visible, debiasing, plus two quantum ideas you can watch happen: superposition (un-flipping a quantum coin) and entanglement (a Bell test). One circuit, one job: runs on Qollab's free simulators, including IonQ.
 ```
 
 ## Description (the write-up)
@@ -54,7 +54,8 @@ All pictures are in `docs/images/`. Regenerate them with `python scripts/make_fi
 | --- | --- | --- |
 | `thumbnail.png` | title card with random-bit background and a random walk | thumbnail |
 | `how_it_works.png` | one circuit → one job → check & debias → numbers, plus the Bell test | write-up, top |
-| `circuit.png` | the circuit: 4 random-number qubits and the 4 Bell-test qubits | How it works |
+| `circuit.png` | the circuit: 4 random-number qubits, the 4 Bell-test qubits and the un-flip qubit | How it works |
+| `unflip.png` | share of 0s after one H vs after H then H (built-in simulator) | Superposition |
 | `demo_chart.png` | per-qubit bias, dice raw vs debiased, random walks (test backend with a simulated 3% bias) | Noise-aware |
 | `randomness_report.png` | bits as pixels, test p-values, correlations (built-in simulator) | How random is each run? |
 | `bell_test.png` | Bell test correlations and S against the classical limit (built-in simulator) | Bell test |

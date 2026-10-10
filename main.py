@@ -6,7 +6,7 @@ and set Shots / Qubits / Debias under Run settings.
 import math
 import textwrap
 
-from qrand import EntropyExhausted, QuantumRandom, stats
+from qrand import EntropyExhausted, QuantumRandom, is_hardware, stats
 from qrand import bell as bell_module
 
 try:
@@ -89,8 +89,49 @@ def s_scale(chsh, per_unit=16):
     ]
 
 
-def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = True, bell: bool = True):
-    qr = QuantumRandom(backend, n_qubits=qubits, shots=shots, debias=debias, bell_test=bell)
+def unflip_sigmas(u):
+    """How many standard errors P(0) lies above the 0.5 of a coin flipped twice."""
+    return (u["zeros"] - u["shots"] / 2) / math.sqrt(u["shots"] / 4)
+
+
+def unflip_shows_interference(u):
+    return unflip_sigmas(u) > 3
+
+
+def explain_unflip(u, single_p0):
+    """Step 1b: H twice shows that superposition is not hidden 0-or-1."""
+    print("\n  Is the qubit secretly 0 or 1 already? Un-flipping a quantum coin")
+    say("Flip a real coin, flip it again, and it is still 50/50. If a qubit in the mix were "
+        "secretly 0 or 1 and we just didn't know which, a second H would act the same way. "
+        "So one extra qubit gets H twice before it is measured:")
+    print("\n      q: ─[H]─[H]─[M]─   ->   ?\n")
+    print(f"    {'one H (coins above)':<22}{bar(single_p0)}  {single_p0:6.1%} zeros")
+    print(f"    {'H then H (un-flipped)':<22}{bar(u['p0'])}  {u['p0']:6.1%} zeros"
+          f"   ({u['zeros']} of {u['shots']} shots)")
+    if u["p0"] == 1:
+        verdict("Always 0. The two ways of reaching 1 cancel each other out, like waves "
+                "(interference). A coin that was secretly heads or tails can't do that: the "
+                "qubit really was in both states at once. That is superposition.")
+    elif unflip_shows_interference(u):
+        verdict(f"0 came up {u['p0']:.1%} of the time, far more than the 50% of a coin flipped "
+                "twice: the two ways of reaching 1 cancel out (interference), so the qubit was "
+                f"not secretly 0 or 1. The few 1s ({1 - u['p0']:.1%}) are noise: it disturbs "
+                "the qubit while it is in superposition and washes out part of the interference "
+                "(decoherence). That is why quantum computers are hard to build.")
+    else:
+        verdict(f"0 came up {u['p0']:.1%} of the time, close to the 50% of a coin flipped "
+                "twice: here noise destroyed the interference (decoherence), or the backend "
+                "is not quantum.")
+
+
+def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = True, bell: bool = True, unflip: bool = True, hardware_checks: bool = False):
+    # The Bell and un-flip qubits only check the randomness. They are free on simulators, but on
+    # real hardware they cost credits, so there they run only when hardware_checks is on.
+    checks_skipped = is_hardware(backend) and not hardware_checks and (bell or unflip)
+    if checks_skipped:
+        bell = unflip = False
+    qr = QuantumRandom(backend, n_qubits=qubits, shots=shots, debias=debias, bell_test=bell,
+                       unflip_test=unflip)
     rep = qr.report()
     raw, deb = rep["raw"], rep["debiased"]
     kind = "real quantum hardware" if rep["hardware"] else "a simulator"
@@ -101,7 +142,8 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
     print("  quRandom: random numbers from quantum coin flips")
     print("=" * WIDTH)
     print("What this program does:")
-    print("  STEP 1  Flip quantum coins   measure qubits that are 50% 0 and 50% 1")
+    print("  STEP 1  Flip quantum coins   50/50 qubits"
+          + (", then un-flip one (superposition)" if unflip else ""))
     print("  STEP 2  Check the coins      are the 0s and 1s fair and free of patterns?")
     print("  STEP 3  Make numbers         turn the bits into dice rolls, decimals, shuffles")
     if bell:
@@ -109,9 +151,13 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
     print("  Then a short summary, and technical details at the end for experts.\n")
     print(f"This run: {qubits} qubits x {shots} shots on {rep['backend']} ({kind})")
     print(f"          = {raw['bits']:,} random bits from a single run of the circuit")
+    if checks_skipped:
+        say("Real hardware: the Bell and un-flip checks are off to save credits. They only "
+            "check the randomness and never become numbers. To test this device, turn on "
+            "Hardware checks (best in a separate run).", "")
 
     # ---------------------------------------------------------------- step 1
-    heading(f"STEP 1 of {steps}: Flip quantum coins")
+    heading(f"STEP 1 of {steps}: Flip quantum coins" + (" (and un-flip one)" if unflip else ""))
     say("Every qubit starts at 0. A Hadamard gate (H) puts it in an equal mix of 0 and 1. "
         "Measuring it (M) then gives 0 or 1, each with a 50% chance, like a perfect coin. "
         "For one qubit the circuit is:")
@@ -119,7 +165,11 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
     say(f"We do this on {qubits} qubits at once and repeat it {shots} times (each repeat is a "
         f"'shot'), so we get {qubits} x {shots} = {raw['bits']:,} coin flips."
         + (" Four more qubits run the Bell test of step 4 in the same circuit." if bell else "")
+        + (" One more qubit is un-flipped below." if unflip else "")
         + " The full circuit is drawn in the technical details at the end.")
+    unflipped = rep["unflip"]
+    if unflipped:
+        explain_unflip(unflipped, 1 - raw["ones_fraction"])
 
     # ---------------------------------------------------------------- step 2
     heading(f"STEP 2 of {steps}: Check the coins")
@@ -269,11 +319,17 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
         + (["a shuffle"] if shuffled else [])
     print(f"  ✔ Made {', '.join(made[:-1]) + ' and ' + made[-1] if len(made) > 1 else made[0]}; "
           f"{qr.bits_remaining:,} bits left")
+    if unflipped:
+        print(f"  {'✔' if unflip_shows_interference(unflipped) else '!'} Un-flipped coin gave 0 "
+              f"in {unflipped['p0']:.1%} of shots (a real coin: 50%)"
+              + (": superposition" if unflip_shows_interference(unflipped) else ""))
     if chsh and not math.isnan(chsh["S"]):
         quantum = chsh["S"] > chsh["classical_limit"]
         print(f"  {'✔' if quantum else '!'} Bell test: S = {chsh['S']:.2f}, "
               + ("above the classical limit of 2: quantum" if quantum
                  else "not above the classical limit of 2 this time"))
+    if checks_skipped:
+        print("  - Bell and un-flip checks skipped on hardware (turn on Hardware checks)")
     if rep["hardware"]:
         say("Note: these bits come from measuring real qubits, so they are physically "
             "random. Any lean above is the hardware's own noise.")
@@ -286,9 +342,13 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
 
     # ---------------------------------------------------------------- details
     heading("TECHNICAL DETAILS (for experts)")
-    print("Full circuit"
-          + (f" (q0-q{qubits - 1}: random numbers, q{qubits}-q{qubits + 1}: Bell setting "
-             f"coins, q{qubits + 2}-q{qubits + 3}: entangled pair):" if bell else ":"))
+    parts = [f"q0-q{qubits - 1}: random numbers"]
+    if bell:
+        parts += [f"q{qubits}-q{qubits + 1}: Bell setting coins",
+                  f"q{qubits + 2}-q{qubits + 3}: entangled pair"]
+    if unflip:
+        parts.append(f"q{qr.circuit.num_qubits - 1}: un-flip test")
+    print(f"Full circuit ({', '.join(parts)}):")
     print(qr.circuit.draw("text"))
     print(f"\n{'NIST SP 800-22 p-values':<26}{'raw':>14}{debias:>14}   (p >= 0.01 passes)")
     print(f"{'bits':<26}{raw['bits']:>14}{deb['bits']:>14}")
@@ -311,6 +371,13 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
         print(f"  S = {chsh['S']:.3f} ± {chsh['sigma']:.3f}  "
               f"({chsh['sigmas_above_classical']:+.1f} sigma relative to 2; Tsirelson bound "
               f"{chsh['quantum_prediction']:.3f})")
+    if unflipped:
+        print()
+        say(f"Un-flip test (H, barrier, H, measure): P(0) = {unflipped['p0']:.4f} "
+            f"({unflipped['zeros']}/{unflipped['shots']}), {unflip_sigmas(unflipped):+.1f} sigma "
+            "from the 0.5 of a classical coin. The barrier stops Qiskit from cancelling H·H. A "
+            "cloud compiler may still merge the two gates; then the 1s come only from "
+            "measurement (readout) errors.", "")
 
     min_p = {name: min(r[key] for key, *_ in HEALTH_TESTS if not math.isnan(r[key]))
              for name, r in (("raw", raw), ("debiased", deb))}
@@ -321,10 +388,14 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
           f"{raw['ones_fraction']:.4f} | {deb['ones_fraction']:.4f} | {raw_walk_end:+d} | "
           f"{deb_walk_end:+d} | {min_p['raw']:.3f} | {min_p['debiased']:.3f} | "
           f"{raw['min_entropy']:.3f} | {deb['min_entropy']:.3f} | "
-          f"{format_s(chsh)} |")
+          f"{format_s(chsh)} | {'-' if not unflipped else format(unflipped['p0'], '.3f')} |")
     if plot:
-        print("\nThree charts follow: (1) the coins, the dice and the random walk, (2) what the")
-        print("bits look like and the checks, (3) the Bell test.")
+        charts = ["the coins, the dice and the random walk", "what the bits look like and the checks"]
+        charts += ["the Bell test"] if chsh else []
+        charts += ["the un-flipped coin"] if unflipped else []
+        print()
+        say(f"{len(charts)} charts follow: "
+            + ", ".join(f"({i}) {c}" for i, c in enumerate(charts, 1)) + ".", "")
 
     if plot:
         try:
@@ -369,6 +440,8 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
         plot_randomness_report(plt, raw_bits, deb_bits, raw, deb, f"{cleaned} ({debias})", raw_c, deb_c)
         if chsh:
             plot_bell(plt, chsh)
+        if unflipped:
+            plot_unflip(plt, unflipped, 1 - raw["ones_fraction"])
 
 
 def plot_randomness_report(plt, raw_bits, deb_bits, raw, deb, cleaned, raw_c, deb_c):
@@ -444,6 +517,20 @@ def plot_bell(plt, chsh):
     ax[1].set(title=f"Bell test score S = {s_value:.2f} ± {sigma:.2f}\nabove 2 = quantum", xlim=(min(0, s_value - 0.5), 3.2),
               ylim=(-0.5, 1.1), yticks=[])
     ax[1].legend(fontsize=7, loc="upper left", ncol=2)
+    fig.tight_layout()
+    plt.show()
+
+
+def plot_unflip(plt, u, single_p0):
+    """Fourth chart: share of 0s after one H vs after H then H."""
+    fig, ax = plt.subplots(figsize=(6, 3.4))
+    ax.bar([0, 1], [single_p0, u["p0"]], color=["#ff7a59", "#5b6cff"], width=0.55)
+    ax.axhline(0.5, color="k", ls="--", lw=1, label="a coin flipped twice: 50%")
+    for x, p in enumerate((single_p0, u["p0"])):
+        ax.text(x, p + 0.02, f"{p:.1%}", ha="center")
+    ax.set_xticks([0, 1], ["one H\n(a quantum coin)", "H then H\n(un-flipped)"])
+    ax.set(title="Un-flipping a quantum coin: interference", ylabel="share of 0s", ylim=(0, 1.15))
+    ax.legend(fontsize=8, loc="upper left")
     fig.tight_layout()
     plt.show()
 

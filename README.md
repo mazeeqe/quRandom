@@ -38,7 +38,10 @@ python main.py
 One run sends a single circuit job. The console is written for newcomers: it opens with a
 four-step overview, explains each step in plain words, and marks every check with ✔ or ✘.
 
-1. **Flip quantum coins:** a Hadamard gate and a measurement turn each qubit into a fair coin.
+1. **Flip quantum coins (and un-flip one):** a Hadamard gate and a measurement turn each qubit
+   into a fair coin. One extra qubit gets H twice and reads 0 every time: the two paths to 1
+   cancel (interference), so superposition is not a coin that is secretly heads or tails. On a
+   noisy device a few 1s slip in, which is decoherence.
 2. **Check the coins:** how often each qubit gave 1, six yes/no checks (five NIST SP 800-22
    tests plus a hidden-pattern check), an unpredictability score (NIST SP 800-90B min-entropy
    as a share of the best possible) and a **random walk**: every bit is a step, `1` up and `0`
@@ -58,7 +61,7 @@ With **Plot** on it also draws this chart:
 ![Demo chart: per-qubit bias, dice raw vs debiased, and two random walks](docs/images/demo_chart.png)
 
 *This example comes from a test backend with a simulated 3% bias toward `1`: the raw walk
-(orange) ends at +294, outside the ±128 band, while the debiased walk (blue) stays inside. On an
+(orange) ends at +206, outside the ±128 band, while the debiased walk (blue) stays inside. On an
 unbiased simulator both walks stay inside the band.*
 
 A second chart, the **randomness report**, shows each run at a glance:
@@ -102,7 +105,7 @@ sides far apart and other loopholes closed, which a single chip or a simulator c
 
 ![Bell test: correlations per setting pair and S against the classical limit](docs/images/bell_test.png)
 
-*A 512-shot run on Qiskit's built-in simulator: S = 2.85 ± 0.12, about 7 standard errors above
+*A 512-shot run on Qiskit's built-in simulator: S = 2.84 ± 0.13, about 7 standard errors above
 the classical limit. A value above 2.83 is sampling noise; more shots narrow the error.*
 
 ### Run settings
@@ -117,6 +120,15 @@ On Qollab, these appear under **Run settings** in the Select QPU dialog. Locally
 | `debias` | `xor` | `xor`, `von_neumann` or `none` |
 | `plot` | on | draw the charts |
 | `bell` | on | add the Bell test: 4 extra qubits in the same circuit and job |
+| `unflip` | on | add the un-flip test: 1 extra qubit with H, H, measure |
+
+| `hardware_checks` | off | on real hardware, also run the Bell and un-flip checks (costs more) |
+
+The Bell and un-flip qubits only check the randomness; they never become numbers. On simulators
+they run alongside the numbers because they are free. On real hardware they are skipped unless
+`hardware_checks` is on, so a normal run pays only for the random-number qubits. In your own
+code, `QuantumRandom` leaves them out by default and `check_hardware(backend)` runs them as a
+separate test.
 
 ### Run on real quantum hardware
 

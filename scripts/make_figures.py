@@ -4,9 +4,9 @@ Run from the repository root:  python scripts/make_figures.py
 
 - thumbnail.png: Project Card thumbnail
 - how_it_works.png: one circuit -> bits -> pool -> numbers, plus the Bell test
-- circuit.png: the circuit (4 random-number qubits + 4 Bell-test qubits, for readability)
+- circuit.png: the circuit (4 random-number qubits, 4 Bell-test qubits, 1 un-flip qubit)
 - demo_chart.png: demo chart on a test backend with a simulated 3% bias toward 1
-- randomness_report.png, bell_test.png: demo charts from Qiskit's built-in simulator
+- randomness_report.png, bell_test.png, unflip.png: demo charts from Qiskit's built-in simulator
 """
 import math
 import pathlib
@@ -49,7 +49,7 @@ def demo_charts(backend, names):
 
 
 def circuit():
-    qr = QuantumRandom(n_qubits=4, shots=64, debias="none", bell_test=True)
+    qr = QuantumRandom(n_qubits=4, shots=64, debias="none", bell_test=True, unflip_test=True)
     fig = qr.circuit.draw("mpl", fold=-1, style={"backgroundcolor": "#ffffff"})
     fig.savefig(OUT / "circuit.png", dpi=110, bbox_inches="tight")
     plt.close(fig)
@@ -130,9 +130,9 @@ if __name__ == "__main__":
     thumbnail()
     how_it_works()
     circuit()
-    demo_charts(BiasedBackend(0.53), ["demo_chart.png", None, None])
+    demo_charts(BiasedBackend(0.53), ["demo_chart.png", None, None, None])
     seeded = BasicSimulator()
     seeded.set_options(seed_simulator=2026)  # same pictures on every run
-    demo_charts(seeded, [None, "randomness_report.png", "bell_test.png"])
+    demo_charts(seeded, [None, "randomness_report.png", "bell_test.png", "unflip.png"])
     for p in sorted(OUT.glob("*.png")):
         print(p.relative_to(ROOT), f"{p.stat().st_size // 1024} KB")
