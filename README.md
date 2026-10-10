@@ -7,8 +7,9 @@ circuit job fills an *entropy pool*, and numbers are carved out of it. qrand mea
 bias (noisy hardware often reads `1` a little more than `0`) and can remove it with `xor` or
 `von_neumann` debiasing.
 
-See [docs/PROJECT_PAGE.md](docs/PROJECT_PAGE.md) for the full write-up and
-[docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) for the demo video plan.
+See [docs/USAGE.md](docs/USAGE.md) for the full API: ranges, bit costs and how many numbers a
+job gives you. [docs/PROJECT_PAGE.md](docs/PROJECT_PAGE.md) has the project write-up, and
+[docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) has the demo video plan.
 
 ## Getting started
 

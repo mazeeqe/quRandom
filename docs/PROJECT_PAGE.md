@@ -18,6 +18,9 @@ bits "1001011011100011"  ->  int(bits, 2)  ->  38627
 - `random()`, `choice()`, `shuffle()`: floats, picks and shuffles
 - `report()`: per-qubit bias and NIST-style health tests (monobit, runs, entropy)
 
+Full usage guide, with ranges and how many numbers each job gives:
+[docs/USAGE.md](https://github.com/mazeeqe/quRandom/blob/main/docs/USAGE.md)
+
 ## What is new: noise-aware randomness
 
 Real devices and their noise models are not perfect coins. A qubit can read
