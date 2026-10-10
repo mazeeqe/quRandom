@@ -86,3 +86,16 @@ def test_report_and_shuffle():
     qr = QuantumRandom(shots=256)
     assert qr.report()["debiased"]["bits"] == 8 * 256 // 2
     x = list(range(10)); qr.shuffle(x); assert sorted(x) == list(range(10))
+
+
+def test_random_walk_and_dice_helpers():
+    assert stats.random_walk("1101") == [0, 1, 2, 1, 2]
+    # 3-bit chunks: 000 -> 1, 101 -> 6, 110 and 111 rejected
+    assert stats.dice_from_bits("000101110111") == [1, 6]
+
+
+def test_chi2_uniform_p():
+    assert stats.chi2_uniform_p([100] * 6) == 1.0
+    assert stats.chi2_uniform_p([200, 100, 100, 100, 100, 100]) < 0.01
+    with pytest.raises(ValueError):
+        stats.chi2_uniform_p([1, 2, 3])

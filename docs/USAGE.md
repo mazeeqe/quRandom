@@ -140,6 +140,18 @@ least 512 raw bits with `von_neumann` (for example 8 qubits × 64 shots).
 The same tests are available on their own in `qrand.stats`:
 `ones_fraction`, `monobit_p`, `runs_p`, `nibble_entropy`, `per_qubit_p1` and `health_report`.
 
+`qrand.stats` also has the helpers behind the demo charts:
+
+| Function | Returns |
+| --- | --- |
+| `random_walk(bits)` | list of positions, starting at 0; `'1'` steps up, `'0'` steps down |
+| `dice_from_bits(bits)` | die rolls 1–6 from 3-bit chunks; chunks worth 6 or 7 are skipped |
+| `chi2_uniform_p(counts)` | chi-square p-value against equal counts (needs an even number of categories, e.g. 6 faces); `>= 0.01` means consistent with fair |
+
+A fair random walk of `n` steps ends within `±2√n` about 95% of the time. If bits are biased
+toward 1 with P(1) = p, the walk drifts by about `(2p − 1) × n`, so the drift grows faster than
+the spread and becomes visible with enough steps.
+
 ## Other attributes
 
 | Attribute | Meaning |
@@ -160,10 +172,11 @@ The same tests are available on their own in `qrand.stats`:
 | Shots | 512 | more shots, more numbers |
 | Qubits | 8 | must be even with `xor` |
 | Debias | `xor` | `xor`, `von_neumann` or `none` |
-| Plot | on | draws the per-qubit bias and dice charts |
+| Plot | on | draws the per-qubit bias, the raw vs debiased dice and the random walks |
 
 The demo draws 16 bits, up to 120 die rolls, one float and a 6-letter shuffle (about 600 bits in
-total), so the defaults leave plenty to spare. With `von_neumann` and few shots, it may run out of
+total), so the defaults leave plenty to spare. The random walk and the raw vs debiased dice
+only read the job's bits for the charts; they do not use up the pool. With `von_neumann` and few shots, it may run out of
 bits early and print a message instead of crashing.
 
 ## Limits to keep in mind

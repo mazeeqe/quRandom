@@ -3,7 +3,9 @@
 Press Run, pick a QPU (built-in simulator or an IonQ remote simulator),
 and set Shots / Qubits / Debias under Run settings.
 """
-from qrand import QuantumRandom, EntropyExhausted
+import math
+
+from qrand import QuantumRandom, EntropyExhausted, stats
 
 try:
     backend  # pre-created by Qollab from the Select QPU dialog
@@ -41,7 +43,26 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
           f"monobit p={deb['monobit_p']:.3f}, runs p={deb['runs_p']:.3f}")
     print("(p >= 0.01 passes. Noise models can tilt raw bits toward 1; debiasing evens them out.)\n")
 
-    print("=== 4. Using the numbers ===")
+    print("=== 4. Random walk: each bit is a step, 1 = up, 0 = down ===")
+    raw_bits, deb_bits = qr.raw_bits, qr.pool_bits()
+    walks = {"raw": stats.random_walk(raw_bits), debias: stats.random_walk(deb_bits)}
+    for name, walk in walks.items():
+        steps, end = len(walk) - 1, walk[-1]
+        band = 2 * math.sqrt(steps)
+        verdict = "inside, looks fair" if abs(end) <= band else "OUTSIDE, drift = bias"
+        print(f"{name:<11}: {steps:>6} steps, ends at {end:+5d}  "
+              f"(fair walks end within +/-{band:.0f} 95% of the time: {verdict})")
+    print("A tiny bias toward 1 makes the walk drift upward; debiasing should remove the drift.\n")
+
+    print("=== 5. Dice from raw vs debiased bits (3 bits per roll, 6 and 7 rejected) ===")
+    dice = {"raw": stats.dice_from_bits(raw_bits), debias: stats.dice_from_bits(deb_bits)}
+    for name, d in dice.items():
+        counts = [d.count(f) for f in range(1, 7)]
+        pct = "  ".join(f"{f}:{100 * c / len(d):4.1f}%" for f, c in zip(range(1, 7), counts))
+        print(f"{name:<11}: {len(d):>5} rolls  {pct}  chi-square p={stats.chi2_uniform_p(counts):.3f}")
+    print("(A fair die gives 16.7% per face. p >= 0.01 means consistent with a fair die.)\n")
+
+    print("=== 6. Using the numbers ===")
     rolls = []
     try:
         for _ in range(120):
@@ -62,19 +83,43 @@ def main(shots: int = 512, qubits: int = 8, debias: str = "xor", plot: bool = Tr
           "simulated quantum randomness. Only real quantum hardware is "
           "physically random.")
 
-    if plot and rolls:
+    if plot:
         try:
             import matplotlib.pyplot as plt
-            fig, ax = plt.subplots(1, 2, figsize=(9, 3.2))
-            ax[0].bar(range(qubits), rep["per_qubit_p1"], color="#5b6cff")
-            ax[0].axhline(0.5, color="k", ls="--", lw=1)
-            ax[0].set(title="P(1) per qubit (raw)", xlabel="qubit", ylim=(0, 1))
-            ax[1].bar(range(1, 7), [rolls.count(f) for f in range(1, 7)], color="#ff7a59")
-            ax[1].set(title=f"{len(rolls)} quantum dice rolls", xlabel="face")
-            fig.tight_layout()
-            plt.show()
         except ImportError:
-            pass
+            return
+        raw_c, deb_c = "#ff7a59", "#5b6cff"
+        fig = plt.figure(figsize=(10, 7))
+
+        ax = fig.add_subplot(2, 2, 1)
+        ax.bar(range(qubits), rep["per_qubit_p1"], color=raw_c)
+        ax.axhline(0.5, color="k", ls="--", lw=1)
+        ax.set(title="P(1) per qubit (raw)", xlabel="qubit", ylim=(0, 1))
+
+        ax = fig.add_subplot(2, 2, 2)
+        width = 0.4
+        for i, (name, d) in enumerate(dice.items()):
+            pct = [100 * d.count(f) / len(d) for f in range(1, 7)]
+            ax.bar([f - width / 2 + i * width for f in range(1, 7)], pct, width,
+                   color=(raw_c, deb_c)[i], label=f"{name} ({len(d)} rolls)")
+        ax.axhline(100 / 6, color="k", ls="--", lw=1)
+        ax.set(title="Dice: raw vs debiased", xlabel="face", ylabel="% of rolls", ylim=(0, 30))
+        ax.legend(fontsize=8, loc="upper center", ncol=2)
+
+        ax = fig.add_subplot(2, 1, 2)
+        n = len(walks["raw"])
+        band = [2 * math.sqrt(t) for t in range(n)]
+        ax.fill_between(range(n), [-b for b in band], band, color="0.9",
+                        label="95% of fair walks stay here")
+        for i, (name, walk) in enumerate(walks.items()):
+            ax.plot(walk, color=(raw_c, deb_c)[i], lw=1.2, label=name)
+        ax.axhline(0, color="k", lw=0.8)
+        ax.set(title="Random walk: 1 = step up, 0 = step down", xlabel="step",
+               ylabel="position")
+        ax.legend(fontsize=8, loc="upper left")
+
+        fig.tight_layout()
+        plt.show()
 
 
 # Qollab calls main() itself after the script finishes, so only call it when run locally.
